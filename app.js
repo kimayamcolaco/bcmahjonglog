@@ -56,7 +56,12 @@ function getCurrentWeekDates() {
 
 async function fetchDatabaseBookings() {
   try {
-    const response = await fetch(DB_URL);
+    const response = await fetch(`${DB_URL}?_=${Date.now()}`, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    });
     if (response.status === 404) {
       // Database is empty, initialize with seed data
       return await initializeSeedData();
