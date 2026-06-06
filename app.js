@@ -9,8 +9,11 @@ const AFTERNOON_TIMES = [
   "2:00 PM", "2:30 PM", "3:00 PM", "3:30 PM", "4:00 PM", "4:30 PM", "5:00 PM", "5:30 PM", "6:00 PM"
 ];
 
-// Unique database key on kvdb.io (shared free KV store)
-const DB_URL = "https://kvdb.io/SvmeRCjC2rgQ5SvPj5n7y7/bookings";
+// Unique database key on kvdb.io (shared free KV store) or Netlify Serverless Proxy
+const DB_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+  ? "https://kvdb.io/SvmeRCjC2rgQ5SvPj5n7y7/bookings"
+  : "/.netlify/functions/bookings";
+
 
 // --- State ---
 let state = {
