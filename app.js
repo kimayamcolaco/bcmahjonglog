@@ -10,7 +10,7 @@ const AFTERNOON_TIMES = [
 ];
 
 // Unique database key on kvdb.io (shared free KV store)
-const DB_URL = "https://kvdb.io/BCML_v1_prod_9021/bookings";
+const DB_URL = "https://kvdb.io/SvmeRCjC2rgQ5SvPj5n7y7/bookings";
 
 // --- State ---
 let state = {
@@ -58,6 +58,7 @@ async function fetchDatabaseBookings() {
   try {
     const response = await fetch(DB_URL);
     if (response.status === 404) {
+      // Database is empty, initialize with seed data
       return await initializeSeedData();
     }
     if (!response.ok) throw new Error("Failed to fetch cloud database.");
@@ -66,29 +67,43 @@ async function fetchDatabaseBookings() {
     return Array.isArray(data) ? migrateData(data) : [];
   } catch (error) {
     console.warn("Database error, falling back to localStorage:", error);
-    const saved = localStorage.getItem("mahjong_bookings");
-    return saved ? migrateData(JSON.parse(saved)) : [];
+    try {
+      const saved = localStorage.getItem("mahjong_bookings");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return Array.isArray(parsed) ? migrateData(parsed) : [];
+      }
+    } catch (storageError) {
+      console.error("Local storage read failed:", storageError);
+    }
+    return [];
   }
 }
 
 function migrateData(bookingsList) {
-  const weekDates = getCurrentWeekDates();
-  bookingsList.forEach(b => {
-    // 1. Convert string seat keys to numbers if needed
-    if (b.seat === "N" || b.seat === "1") b.seat = 1;
-    else if (b.seat === "E" || b.seat === "2") b.seat = 2;
-    else if (b.seat === "S" || b.seat === "3") b.seat = 3;
-    else if (b.seat === "W" || b.seat === "4") b.seat = 4;
-    else b.seat = parseInt(b.seat);
+  if (!Array.isArray(bookingsList)) return [];
+  try {
+    const weekDates = getCurrentWeekDates();
+    bookingsList.forEach(b => {
+      if (!b) return;
+      // 1. Convert string seat keys to numbers if needed
+      if (b.seat === "N" || b.seat === "1") b.seat = 1;
+      else if (b.seat === "E" || b.seat === "2") b.seat = 2;
+      else if (b.seat === "S" || b.seat === "3") b.seat = 3;
+      else if (b.seat === "W" || b.seat === "4") b.seat = 4;
+      else b.seat = parseInt(b.seat) || 1;
 
-    // 2. Inject current week date for old seed data lacking a date field
-    if (!b.date) {
-      b.date = weekDates[b.day]?.dateString || weekDates["Monday"].dateString;
-    }
-    if (!b.groupId) {
-      b.groupId = `g-${Date.now()}-${Math.floor(Math.random()*1000)}`;
-    }
-  });
+      // 2. Inject current week date for old seed data lacking a date field
+      if (!b.date) {
+        b.date = weekDates[b.day]?.dateString || weekDates["Monday"].dateString;
+      }
+      if (!b.groupId) {
+        b.groupId = `g-${Date.now()}-${Math.floor(Math.random()*1000)}`;
+      }
+    });
+  } catch (e) {
+    console.error("Migration error:", e);
+  }
   return bookingsList;
 }
 
@@ -127,9 +142,15 @@ async function initializeSeedData() {
 // Full page loader for initial sync
 async function performInitialSync() {
   showLoading(true);
-  state.bookings = await fetchDatabaseBookings();
-  showLoading(false);
-  updateView();
+  try {
+    state.bookings = await fetchDatabaseBookings();
+  } catch (err) {
+    console.error("Initial sync error:", err);
+    state.bookings = [];
+  } finally {
+    showLoading(false);
+    updateView();
+  }
 }
 
 // Background sync (silent, no overlay)
@@ -146,6 +167,24 @@ document.addEventListener("DOMContentLoaded", () => {
   setInitialDay();
   updateDayButtons();
   initEventListeners();
+  
+  // Load local cache first for instant layout rendering
+  try {
+    const saved = localStorage.getItem("mahjong_bookings");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        state.bookings = migrateData(parsed);
+      }
+    }
+  } catch (err) {
+    console.warn("Could not load local cache on startup:", err);
+  }
+  
+  // Render layout immediately so there is no blank screen
+  updateView();
+  
+  // Sync database bookings in background
   performInitialSync();
   
   // Set up 15-second background auto-refresh loop
@@ -171,14 +210,18 @@ function setInitialDay() {
   const currentDayName = days[new Date().getDay()];
   if (currentDayName !== "Sunday") {
     state.currentDay = currentDayName;
-    document.querySelectorAll(".day-btn").forEach(btn => {
-      if (btn.getAttribute("data-day") === currentDayName) {
-        btn.classList.add("active");
-      } else {
-        btn.classList.remove("active");
-      }
-    });
+  } else {
+    state.currentDay = "Monday"; // Sunday rolls over to Monday
   }
+  
+  // Set active class on active button
+  document.querySelectorAll(".day-btn").forEach(btn => {
+    if (btn.getAttribute("data-day") === state.currentDay) {
+      btn.classList.add("active");
+    } else {
+      btn.classList.remove("active");
+    }
+  });
 }
 
 // --- View Updates / Rendering ---
@@ -474,8 +517,10 @@ function initEventListeners() {
   });
 
   // Backup Sync listeners
-  document.getElementById("btn-export-data").addEventListener("click", openExportModal);
-  document.getElementById("btn-import-data").addEventListener("click", openImportModal);
+  const btnExport = document.getElementById("btn-export-data");
+  if (btnExport) btnExport.addEventListener("click", openExportModal);
+  const btnImport = document.getElementById("btn-import-data");
+  if (btnImport) btnImport.addEventListener("click", openImportModal);
 }
 
 // --- Action Logic & Concurrency Checking ---
@@ -760,3 +805,4 @@ function showToast(message, type = "success") {
     toast.remove();
   }, 5000);
 }
+
