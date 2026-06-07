@@ -108,6 +108,9 @@ function migrateData(bookingsList) {
       if (!b.groupId) {
         b.groupId = `g-${Date.now()}-${Math.floor(Math.random()*1000)}`;
       }
+      if (!b.gameType) {
+        b.gameType = "Taiwanese";
+      }
     });
   } catch (e) {
     console.error("Migration error:", e);
@@ -349,6 +352,13 @@ function renderRoomLayout() {
       timeBadge.innerText = tableBookings[0].timeStart;
       badgesContainer.appendChild(timeBadge);
       
+      // Mahjong Type badge
+      const gameType = tableBookings[0].gameType || "Taiwanese";
+      const typeBadge = document.createElement("span");
+      typeBadge.className = "table-type-header-badge";
+      typeBadge.innerHTML = `<i data-lucide="layers" style="width: 10px; height: 10px;"></i> ${gameType}`;
+      badgesContainer.appendChild(typeBadge);
+      
       // Needs Set badge
       if (needsSet) {
         const setBadge = document.createElement("span");
@@ -483,6 +493,9 @@ function openBookingModal(table, seat) {
   const timeList = state.currentSlot === "Morning" ? MORNING_TIMES : AFTERNOON_TIMES;
   populateTimeDropdown(timeList);
   
+  const typeSelect = document.getElementById("player-game-type");
+  const typeDisplay = document.getElementById("player-game-type-locked-display");
+  
   if (activeBookings.length > 0) {
     const lockedTime = activeBookings[0].timeStart;
     timeSelect.value = lockedTime;
@@ -492,12 +505,28 @@ function openBookingModal(table, seat) {
     timeDisplay.classList.remove("hidden");
     
     document.getElementById("time-range-tip").innerText = `Locked to match existing booking(s) at this table.`;
+
+    const lockedType = activeBookings[0].gameType || "Taiwanese";
+    typeSelect.value = lockedType;
+    typeSelect.classList.add("hidden");
+    
+    typeDisplay.innerHTML = `<i data-lucide="lock" style="width: 14px; height: 14px;"></i> ${lockedType} (Locked for Table ${table})`;
+    typeDisplay.classList.remove("hidden");
+    
+    document.getElementById("game-type-tip").innerText = `Locked to match existing booking(s) at this table.`;
   } else {
     timeSelect.classList.remove("hidden");
     timeSelect.disabled = false;
     
     timeDisplay.classList.add("hidden");
     document.getElementById("time-range-tip").innerText = "Select when you will start playing.";
+
+    typeSelect.classList.remove("hidden");
+    typeSelect.disabled = false;
+    typeSelect.value = "Taiwanese";
+    
+    typeDisplay.classList.add("hidden");
+    document.getElementById("game-type-tip").innerText = "Select the style of Mahjong you will be playing.";
   }
   
   // Sets availability logic
@@ -553,6 +582,8 @@ function openDetailsModal(booking) {
   document.getElementById("detail-time").innerText = booking.timeStart;
   document.getElementById("detail-set").innerText = booking.needSet ? "Yes, requested Club Set" : "No (Bringing own set)";
   document.getElementById("detail-set").style.color = booking.needSet ? "var(--color-gold)" : "var(--color-text-muted)";
+  document.getElementById("detail-game-type").innerText = booking.gameType || "Taiwanese";
+
   
   const cancelConfirm = document.getElementById("cancel-confirm-area");
   
@@ -640,6 +671,7 @@ async function handleNewBooking() {
   const name = document.getElementById("player-name").value.trim();
   const guestCount = parseInt(document.getElementById("player-guests").value);
   const timeStart = document.getElementById("player-time-start").value;
+  const gameType = document.getElementById("player-game-type").value;
   const needSet = document.getElementById("player-need-set").checked;
   
   if (!name) {
@@ -678,7 +710,18 @@ async function handleNewBooking() {
       showToast(`A booking was just made for ${lockedTime} at Table ${table}. Your start time must match!`, "error");
       return;
     }
+
+    const lockedType = activeBookings[0].gameType || "Taiwanese";
+    if (gameType !== lockedType) {
+      showLoading(false);
+      closeBookingModal();
+      state.bookings = freshBookings;
+      updateView();
+      showToast(`A booking was just made for ${lockedType} Mahjong at Table ${table}. Your game type must match!`, "error");
+      return;
+    }
   }
+
   
   // Check for Club Sets limit concurrency
   if (needSet) {
@@ -743,6 +786,7 @@ async function handleNewBooking() {
     name,
     timeStart,
     needSet,
+    gameType,
     groupId
   });
 
@@ -762,6 +806,7 @@ async function handleNewBooking() {
         name: `${name} (+${guestCount - guestsRemaining + 1})`,
         timeStart,
         needSet,
+        gameType,
         groupId
       });
       seatsBooked.push(currentFree);

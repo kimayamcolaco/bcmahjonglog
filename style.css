@@ -584,6 +584,25 @@ h1, h2, h3, h4 {
   height: 10px;
 }
 
+.table-type-header-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  background: var(--color-bamboo-glow);
+  color: var(--color-bamboo);
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.4rem;
+  border: 1px solid rgba(12, 74, 48, 0.15);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.table-type-header-badge svg {
+  width: 10px;
+  height: 10px;
+}
+
+
 .locked-time-display {
   font-family: var(--font-title);
   font-weight: 700;
