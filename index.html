@@ -48,7 +48,7 @@
           <div class="slot-selector" id="slot-selector">
             <button class="slot-btn active" data-slot="Morning">
               <span class="slot-name">Morning</span>
-              <span class="slot-hours">10:00 AM - 1:00 PM</span>
+              <span class="slot-hours">10:00 AM - 1:30 PM</span>
             </button>
             <button class="slot-btn" data-slot="Afternoon">
               <span class="slot-name">Afternoon</span>
@@ -154,6 +154,12 @@
           <p class="input-tip" id="game-type-tip">Select the style of Mahjong you will be playing.</p>
         </div>
 
+        <div class="form-group">
+          <label for="player-pin">4-Digit PIN (for cancelling later)</label>
+          <input type="password" id="player-pin" required pattern="[0-9]{4}" inputmode="numeric" maxlength="4" placeholder="Enter 4-digit PIN (e.g. 1234)">
+          <p class="input-tip">Choose a 4-digit PIN so you can cancel or change your booking later.</p>
+        </div>
+
         <div class="form-group check-group card-checkbox">
           <div class="checkbox-content">
             <label class="checkbox-title">
@@ -203,12 +209,11 @@
         </div>
 
         <div class="cancel-confirm-area" id="cancel-confirm-area">
-          <p class="warning-text">To cancel, please confirm your booking name below:</p>
-
+          <p class="warning-text" id="cancel-warning-desc">To cancel, please enter your 4-digit PIN below:</p>
           <div class="form-group">
-            <input type="text" id="cancel-name-input" placeholder="Type name to cancel">
+            <input type="password" id="cancel-pin-input" required pattern="[0-9]{4}" inputmode="numeric" maxlength="4" placeholder="Enter 4-digit PIN to cancel">
           </div>
-          <p class="error-text hidden" id="cancel-error">Name does not match the booking!</p>
+          <p class="error-text hidden" id="cancel-error">Incorrect PIN! Please try again.</p>
         </div>
       </div>
       <div class="modal-actions">

@@ -2,7 +2,7 @@
 
 // --- Constants & Config ---
 const MORNING_TIMES = [
-  "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM", "1:00 PM"
+  "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM", "1:00 PM", "1:30 PM"
 ];
 
 const AFTERNOON_TIMES = [
@@ -118,13 +118,24 @@ function migrateData(bookingsList) {
   return bookingsList;
 }
 
-async function saveDatabaseBookings(bookingsList) {
+async function sha256(message) {
+  const msgBuffer = new TextEncoder().encode(message || '');
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function saveDatabaseBookings(bookingsList, cancelPin = null) {
   try {
+    const headers = {
+      "Content-Type": "application/json"
+    };
+    if (cancelPin) {
+      headers["X-Cancel-Pin"] = cancelPin;
+    }
     const response = await fetch(DB_URL, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: headers,
       body: JSON.stringify(bookingsList)
     });
     if (!response.ok) throw new Error("Failed to write to cloud database.");
@@ -240,7 +251,7 @@ function updateView() {
   const weekDates = getCurrentWeekDates();
   const activeDate = weekDates[state.currentDay];
   const dateLabel = activeDate ? activeDate.label : "";
-  const slotLabel = state.currentSlot === "Morning" ? "Morning (10:00 AM - 1:00 PM)" : "Afternoon (2:00 PM - 6:00 PM)";
+  const slotLabel = state.currentSlot === "Morning" ? "Morning (10:00 AM - 1:30 PM)" : "Afternoon (2:00 PM - 6:00 PM)";
   
   document.getElementById("current-view-title").innerText = `${state.currentDay} (${dateLabel}) — ${slotLabel}`;
   
@@ -458,6 +469,7 @@ function populateTimeDropdown(timeList) {
 
 function openBookingModal(table, seat) {
   document.getElementById("player-name").value = "";
+  document.getElementById("player-pin").value = "";
   
   document.getElementById("modal-table-id").value = table;
   document.getElementById("modal-seat-id").value = seat;
@@ -583,28 +595,16 @@ function openDetailsModal(booking) {
   document.getElementById("detail-set").innerText = booking.needSet ? "Yes, requested Club Set" : "No (Bringing own set)";
   document.getElementById("detail-set").style.color = booking.needSet ? "var(--color-gold)" : "var(--color-text-muted)";
   document.getElementById("detail-game-type").innerText = booking.gameType || "Taiwanese";
-
   
-  const cancelConfirm = document.getElementById("cancel-confirm-area");
+  document.getElementById("cancel-pin-input").value = "";
+  document.getElementById("cancel-error").classList.add("hidden");
   
+  const warningDesc = document.getElementById("cancel-warning-desc");
   if (groupBookings.length > 1) {
     const primaryName = groupBookings.find(b => !b.name.includes("(+"))?.name || groupBookings[0].name;
-    cancelConfirm.innerHTML = `
-      <p class="warning-text"><strong>Group Booking Warning:</strong> Cancelling this will cancel ALL ${groupBookings.length} seats reserved under this group.</p>
-      <p class="warning-text">To cancel the group, please confirm the booking name <strong>"${primaryName}"</strong> below:</p>
-      <div class="form-group">
-        <input type="text" id="cancel-name-input" placeholder="Type group booking name to cancel">
-      </div>
-      <p class="error-text hidden" id="cancel-error">Name does not match the booking!</p>
-    `;
+    warningDesc.innerHTML = `<strong>Group Booking Warning:</strong> Cancelling this will cancel ALL ${groupBookings.length} seats reserved under this group ("${primaryName}").<br><br>Please enter your 4-digit PIN to cancel:`;
   } else {
-    cancelConfirm.innerHTML = `
-      <p class="warning-text">To cancel, please confirm your booking name below:</p>
-      <div class="form-group">
-        <input type="text" id="cancel-name-input" placeholder="Type your name to cancel">
-      </div>
-      <p class="error-text hidden" id="cancel-error">Name does not match the booking!</p>
-    `;
+    warningDesc.innerText = "To cancel, please enter your 4-digit PIN below:";
   }
   
   document.getElementById("details-modal").classList.remove("hidden");
@@ -672,14 +672,20 @@ async function handleNewBooking() {
   const guestCount = parseInt(document.getElementById("player-guests").value);
   const timeStart = document.getElementById("player-time-start").value;
   const gameType = document.getElementById("player-game-type").value;
+  const pin = document.getElementById("player-pin").value.trim();
   const needSet = document.getElementById("player-need-set").checked;
   
   if (!name) {
     showToast("Please enter a name.", "error");
     return;
   }
+  if (!/^\d{4}$/.test(pin)) {
+    showToast("Please enter a valid 4-digit PIN.", "error");
+    return;
+  }
 
   showLoading(true);
+  const pinHash = await sha256(pin);
 
   // Fetch the latest fresh state from the cloud database to check concurrency
   let freshBookings;
@@ -787,6 +793,7 @@ async function handleNewBooking() {
     timeStart,
     needSet,
     gameType,
+    pinHash,
     groupId
   });
 
@@ -807,6 +814,7 @@ async function handleNewBooking() {
         timeStart,
         needSet,
         gameType,
+        pinHash,
         groupId
       });
       seatsBooked.push(currentFree);
@@ -845,12 +853,32 @@ async function handleCancelBooking() {
   const primaryBooking = groupBookings.find(b => !b.name.includes("(+")) || groupBookings[0];
   const primaryName = primaryBooking.name;
   
-  const cancelInput = document.getElementById("cancel-name-input");
-  const nameConfirm = cancelInput.value.trim();
+  const cancelInput = document.getElementById("cancel-pin-input");
+  const cancelPin = cancelInput.value.trim();
   
-  if (nameConfirm.toLowerCase() === originalName.toLowerCase() || 
-      nameConfirm.toLowerCase() === primaryName.toLowerCase()) {
-    
+  if (!/^\d{4}$/.test(cancelPin)) {
+    const errorText = document.getElementById("cancel-error");
+    errorText.innerText = "Please enter a valid 4-digit PIN.";
+    errorText.classList.remove("hidden");
+    cancelInput.focus();
+    return;
+  }
+  
+  const enteredHash = await sha256(cancelPin);
+  const storedHash = selectedBookingForDetails.pinHash;
+  const storedPin = selectedBookingForDetails.pin; // fallback for legacy
+  
+  let pinMatches = false;
+  if (storedHash) {
+    pinMatches = (enteredHash === storedHash);
+  } else if (storedPin) {
+    pinMatches = (cancelPin === storedPin);
+  } else {
+    // Legacy bookings without PIN can be cancelled directly
+    pinMatches = true;
+  }
+  
+  if (pinMatches) {
     showLoading(true);
 
     let freshBookings;
@@ -863,7 +891,7 @@ async function handleCancelBooking() {
     }
 
     const updatedBookings = freshBookings.filter(b => b.groupId !== groupId);
-    const success = await saveDatabaseBookings(updatedBookings);
+    const success = await saveDatabaseBookings(updatedBookings, cancelPin);
 
     showLoading(false);
     closeDetailsModal();
