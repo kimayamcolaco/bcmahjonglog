@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bangalore Club Mahjong Log — Analytics Dashboard</title>
+  
+  <!-- Google Fonts: Inter and Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* Bamboo & Cream Premium Theme */
+    :root {
+      --bg-darker: #fbfaf8; /* Soft cream/ivory */
+      --bg-cream: #f4f1de;  /* Secondary cream accent */
+      --color-bamboo: #1b4332; /* Deep Forest Green */
+      --color-bamboo-light: #2d6a4f;
+      --color-bamboo-glow: rgba(27, 67, 50, 0.08);
+      
+      --color-gold: #d4af37; /* Gold Highlight */
+      --color-gold-light: #fefae0;
+      --color-gold-glow: rgba(212, 175, 55, 0.15);
+      
+      --color-text: #2c3531; /* Charcoal */
+      --color-text-muted: #6b7770;
+      --color-text-light: #ffffff;
+      
+      --card-bg: #ffffff;
+      --card-border: rgba(27, 67, 50, 0.12);
+      --card-shadow: 0 10px 30px rgba(27, 67, 50, 0.04);
+      --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      
+      --font-title: 'Outfit', 'Inter', sans-serif;
+      --font-body: 'Inter', sans-serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: var(--bg-darker);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(27, 67, 50, 0.02) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(212, 175, 55, 0.02) 0px, transparent 50%);
+      color: var(--color-text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      padding: 1.5rem;
+      display: flex;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    .dashboard-container {
+      width: 100%;
+      max-width: 1200px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* Header styling */
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem 2rem;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      box-shadow: var(--card-shadow);
+    }
+
+    .logo-section {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .tile-icon {
+      font-size: 2.2rem;
+      line-height: 1;
+      filter: drop-shadow(0 4px 8px rgba(27, 67, 50, 0.1));
+    }
+
+    .title-group h1 {
+      font-size: 1.35rem;
+      font-family: var(--font-title);
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--color-bamboo) 0%, var(--color-bamboo-light) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin: 0;
+    }
+
+    .title-group p {
+      font-size: 0.82rem;
+      color: var(--color-text-muted);
+      margin: 0.15rem 0 0 0;
+      font-weight: 500;
+    }
+
+    .back-link-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.25rem;
+      border-radius: 30px;
+      background: var(--bg-cream);
+      color: var(--color-bamboo);
+      text-decoration: none;
+      font-family: var(--font-title);
+      font-weight: 700;
+      font-size: 0.85rem;
+      border: 1px solid rgba(27, 67, 50, 0.12);
+      transition: var(--transition-smooth);
+    }
+
+    .back-link-btn:hover {
+      background: var(--color-bamboo);
+      color: var(--color-text-light);
+      box-shadow: 0 4px 12px var(--color-bamboo-glow);
+      transform: translateY(-2px);
+    }
+
+    /* Setup Guide State (Unconfigured) */
+    .setup-card {
+      background: var(--card-bg);
+      border: 2px dashed var(--color-gold);
+      border-radius: 16px;
+      padding: 3rem 2rem;
+      text-align: center;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.25rem;
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    .setup-icon-box {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--color-gold-light);
+      color: var(--color-gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .setup-card h2 {
+      font-family: var(--font-title);
+      font-weight: 800;
+      font-size: 1.6rem;
+      color: var(--color-bamboo);
+      margin: 0;
+    }
+
+    .setup-card p {
+      color: var(--color-text-muted);
+      max-width: 580px;
+      line-height: 1.6;
+      font-size: 0.92rem;
+    }
+
+    .code-snippet-container {
+      width: 100%;
+      max-width: 680px;
+      background: #232a27;
+      border-radius: 12px;
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      padding: 1.25rem;
+      text-align: left;
+      margin-top: 0.5rem;
+      overflow-x: auto;
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .code-snippet-title {
+      font-family: var(--font-title);
+      font-size: 0.78rem;
+      color: var(--color-gold);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+      font-weight: 700;
+    }
+
+    .code-block {
+      margin: 0;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.85rem;
+      color: #e6ebd0;
+      line-height: 1.5;
+    }
+
+    .code-keyword { color: #f97316; }
+    .code-variable { color: #38bdf8; }
+    .code-string { color: #a3e635; }
+    .code-comment { color: #808080; }
+
+    /* Controls Bar */
+    .controls-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      box-shadow: var(--card-shadow);
+    }
+
+    .week-display {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--color-text);
+      font-family: var(--font-title);
+    }
+
+    .week-display svg {
+      color: var(--color-gold);
+    }
+
+    .controls-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .last-updated {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+
+    .refresh-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.55rem 1.2rem;
+      border-radius: 8px;
+      background: var(--color-bamboo);
+      color: var(--color-text-light);
+      border: none;
+      font-family: var(--font-title);
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+
+    .refresh-btn:hover {
+      background: var(--color-bamboo-light);
+      transform: translateY(-1px);
+    }
+
+    .refresh-btn:active {
+      transform: translateY(0);
+    }
+
+    .refresh-btn svg {
+      transition: transform 0.5s ease;
+    }
+
+    .refresh-btn.loading svg {
+      animation: spin 1s infinite linear;
+    }
+
+    /* KPI Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: var(--transition-smooth);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 30px rgba(27, 67, 50, 0.08);
+    }
+
+    .kpi-card::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 5px;
+    }
+
+    .kpi-card.bookings::after { background: var(--color-bamboo-light); }
+    .kpi-card.cancellations::after { background: var(--color-gold); }
+    .kpi-card.net::after { background: var(--color-text); }
+
+    .kpi-info h3 {
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.4rem;
+      font-weight: 700;
+      font-family: var(--font-title);
+    }
+
+    .kpi-value {
+      font-family: var(--font-title);
+      font-size: 2.25rem;
+      font-weight: 800;
+      color: var(--color-bamboo);
+      line-height: 1;
+    }
+
+    .kpi-icon-box {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .kpi-card.bookings .kpi-icon-box {
+      background: rgba(45, 106, 79, 0.08);
+      color: var(--color-bamboo-light);
+    }
+
+    .kpi-card.cancellations .kpi-icon-box {
+      background: rgba(212, 175, 55, 0.08);
+      color: var(--color-gold);
+    }
+
+    .kpi-card.net .kpi-icon-box {
+      background: rgba(44, 53, 49, 0.06);
+      color: var(--color-text);
+    }
+
+    /* Main Content Grid */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 992px) {
+      .main-grid {
+        grid-template-columns: 1.8fr 1.2fr;
+      }
+    }
+
+    /* Card Panels */
+    .panel-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(27, 67, 50, 0.06);
+      padding-bottom: 0.75rem;
+    }
+
+    .panel-title {
+      font-family: var(--font-title);
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--color-bamboo);
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .panel-title svg {
+      color: var(--color-gold);
+    }
+
+    /* Chart Area */
+    .chart-wrapper {
+      position: relative;
+      width: 100%;
+      height: 350px;
+    }
+
+    /* Activity Feed */
+    .activity-feed-container {
+      display: flex;
+      flex-direction: column;
+      height: 350px;
+    }
+
+    .activity-feed {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      overflow-y: auto;
+      padding-right: 0.35rem;
+      height: 100%;
+    }
+
+    .activity-feed::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .activity-feed::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .activity-feed::-webkit-scrollbar-thumb {
+      background: rgba(27, 67, 50, 0.1);
+      border-radius: 3px;
+    }
+
+    .activity-feed::-webkit-scrollbar-thumb:hover {
+      background: rgba(27, 67, 50, 0.2);
+    }
+
+    .activity-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      padding: 0.85rem;
+      border-radius: 10px;
+      background: #fbfbf8;
+      border: 1px solid rgba(27, 67, 50, 0.05);
+      transition: var(--transition-smooth);
+    }
+
+    .activity-item:hover {
+      background: #fdfdfb;
+      border-color: rgba(27, 67, 50, 0.12);
+      box-shadow: 0 4px 12px rgba(27, 67, 50, 0.02);
+    }
+
+    .activity-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .activity-badge {
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+    }
+
+    .badge-booking {
+      background: rgba(45, 106, 79, 0.08);
+      color: var(--color-bamboo-light);
+    }
+
+    .badge-cancellation {
+      background: rgba(212, 175, 55, 0.08);
+      color: var(--color-gold);
+    }
+
+    .activity-time {
+      font-size: 0.72rem;
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+
+    .activity-desc {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--color-text);
+      line-height: 1.4;
+    }
+
+    .activity-empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--color-text-muted);
+      font-size: 0.88rem;
+      gap: 0.5rem;
+      text-align: center;
+    }
+
+    .activity-empty-state svg {
+      opacity: 0.4;
+      color: var(--color-text-muted);
+    }
+
+    /* Async States Overlay */
+    .loading-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 380px;
+      gap: 1rem;
+    }
+
+    .loading-spinner {
+      width: 42px;
+      height: 42px;
+      border: 4px solid rgba(27, 67, 50, 0.1);
+      border-top-color: var(--color-bamboo);
+      border-radius: 50%;
+      animation: spin 1s infinite linear;
+    }
+
+    .loading-panel span {
+      font-size: 0.92rem;
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+
+    .error-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 380px;
+      gap: 1.25rem;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .error-icon-box {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #fff5f5;
+      color: #e53e3e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .error-panel h3 {
+      font-family: var(--font-title);
+      font-size: 1.25rem;
+      color: #9b2c2c;
+      margin: 0;
+    }
+
+    .error-panel p {
+      font-size: 0.88rem;
+      color: #c53030;
+      max-width: 400px;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .retry-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.55rem 1.5rem;
+      border-radius: 8px;
+      background: #c53030;
+      color: #ffffff;
+      border: none;
+      font-family: var(--font-title);
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+
+    .retry-btn:hover {
+      background: #9b2c2c;
+      transform: translateY(-1px);
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-container">
+    <!-- Header -->
+    <header class="dashboard-header">
+      <div class="logo-section">
+        <div class="tile-icon">🀄</div>
+        <div class="title-group">
+          <h1>Bangalore Club Mahjong Log</h1>
+          <p>Usage & Booking Analytics Dashboard</p>
+        </div>
+      </div>
+      <a href="index.html" class="back-link-btn">
+        <i data-lucide="arrow-left" style="width: 16px; height: 16px;"></i>
+        Booking Portal
+      </a>
+    </header>
+
+    <!-- UNCONFIGURED SETUP GUIDE -->
+    <div id="setup-view" class="setup-card hidden">
+      <div class="setup-icon-box">
+        <i data-lucide="sliders" style="width: 32px; height: 32px;"></i>
+      </div>
+      <h2>Supabase Integration Required</h2>
+      <p>
+        To display live club metrics, please configure your Supabase credentials in the file 
+        <code>dashboard.html</code>. Replace the placeholders at the top of the script section with your actual Supabase URL and Anonymous Public Key.
+      </p>
+      <div class="code-snippet-container">
+        <div class="code-snippet-title">Configuration Target (dashboard.html)</div>
+        <pre class="code-block"><code><span class="code-comment">// Hardcode your configuration variables:</span>
+<span class="code-keyword">const</span> <span class="code-variable">SUPABASE_URL</span> = <span class="code-string">"https://your-project.supabase.co"</span>;
+<span class="code-keyword">const</span> <span class="code-variable">SUPABASE_ANON_KEY</span> = <span class="code-string">"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."</span>;</code></pre>
+      </div>
+      <p style="font-size: 0.85rem; margin-top: 0.5rem;">
+        Note: The dashboard queries the <code>usage_events</code> table to aggregate weekly creations and cancellations.
+      </p>
+    </div>
+
+    <!-- LOADING VIEW -->
+    <div id="loading-view" class="panel-card loading-panel hidden">
+      <div class="loading-spinner"></div>
+      <span id="loading-status-text">Fetching usage metrics...</span>
+    </div>
+
+    <!-- ERROR VIEW -->
+    <div id="error-view" class="panel-card error-panel hidden">
+      <div class="error-icon-box">
+        <i data-lucide="alert-circle" style="width: 28px; height: 28px;"></i>
+      </div>
+      <h3>Sync Failure</h3>
+      <p id="error-message">Unable to reach the Supabase Rest API endpoint. Check your internet connection and credentials.</p>
+      <button class="retry-btn" id="btn-retry">
+        <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
+        Try Again
+      </button>
+    </div>
+
+    <!-- DASHBOARD WORKSPACE -->
+    <div id="dashboard-view" class="hidden" style="display: flex; flex-direction: column; gap: 1.5rem;">
+      
+      <!-- Date Filter & Controls -->
+      <section class="controls-bar">
+        <div class="week-display">
+          <i data-lucide="calendar" style="width: 18px; height: 18px;"></i>
+          <span id="date-range-display">Loading week dates...</span>
+        </div>
+        <div class="controls-actions">
+          <span class="last-updated" id="last-updated-text">Not updated yet</span>
+          <button class="refresh-btn" id="btn-refresh">
+            <i data-lucide="refresh-cw" style="width: 15px; height: 15px;"></i>
+            Refresh Data
+          </button>
+        </div>
+      </section>
+
+      <!-- KPI Metrics -->
+      <section class="kpi-grid">
+        <div class="kpi-card bookings">
+          <div class="kpi-info">
+            <h3>Bookings Created</h3>
+            <p class="kpi-value" id="kpi-bookings-count">0</p>
+          </div>
+          <div class="kpi-icon-box">
+            <i data-lucide="calendar-plus" style="width: 24px; height: 24px;"></i>
+          </div>
+        </div>
+
+        <div class="kpi-card cancellations">
+          <div class="kpi-info">
+            <h3>Cancellations</h3>
+            <p class="kpi-value" id="kpi-cancellations-count">0</p>
+          </div>
+          <div class="kpi-icon-box">
+            <i data-lucide="calendar-x" style="width: 24px; height: 24px;"></i>
+          </div>
+        </div>
+
+        <div class="kpi-card net">
+          <div class="kpi-info">
+            <h3>Net Booking Delta</h3>
+            <p class="kpi-value" id="kpi-net-count">0</p>
+          </div>
+          <div class="kpi-icon-box">
+            <i data-lucide="trending-up" id="net-trend-icon" style="width: 24px; height: 24px;"></i>
+          </div>
+        </div>
+      </section>
+
+      <!-- Main Visualizations & Feed -->
+      <section class="main-grid">
+        <!-- Chart Panel -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <h2 class="panel-title">
+              <i data-lucide="bar-chart-3" style="width: 18px; height: 18px;"></i>
+              Booking Activity by Day of the Week
+            </h2>
+            <span style="font-size: 0.72rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;"> Creations (Mon - Sun)</span>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="bookingChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Activity Feed Panel -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <h2 class="panel-title">
+              <i data-lucide="clock" style="width: 18px; height: 18px;"></i>
+              Recent Event Activity Feed
+            </h2>
+            <span style="font-size: 0.72rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">Latest Logs</span>
+          </div>
+          <div class="activity-feed-container">
+            <div class="activity-feed" id="activity-feed-list">
+              <!-- Dynamically populated activity cards -->
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    // --- SUPABASE CONFIGURATION VARIABLES ---
+    const SUPABASE_URL = "YOUR_SUPABASE_URL";
+    const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+    // --- STATE MANAGEMENT ---
+    let state = {
+      bookingsCount: 0,
+      cancellationsCount: 0,
+      dailyCreations: [0, 0, 0, 0, 0, 0, 0], // Monday to Sunday
+      recentEvents: [],
+      mondayDate: null,
+      sundayDate: null
+    };
+
+    let bookingChart = null;
+
+    // --- CHECK CONFIGURATION VALIDITY ---
+    function checkConfigured() {
+      const isUrlConfigured = SUPABASE_URL && SUPABASE_URL !== "YOUR_SUPABASE_URL" && SUPABASE_URL.trim() !== "";
+      const isKeyConfigured = SUPABASE_ANON_KEY && SUPABASE_ANON_KEY !== "YOUR_SUPABASE_ANON_KEY" && SUPABASE_ANON_KEY.trim() !== "";
+      return isUrlConfigured && isKeyConfigured;
+    }
+
+    // --- TIME & WEEK CALCULATIONS ---
+    function computeCurrentWeekMonday() {
+      const today = new Date();
+      const currentDay = today.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+      
+      // Calculate diff to Monday of the current calendar week.
+      // Sunday is the final day of the week, so Monday is 6 days ago.
+      let diffToMonday = 0;
+      if (currentDay === 0) {
+        diffToMonday = -6; 
+      } else {
+        diffToMonday = 1 - currentDay; 
+      }
+      
+      const monday = new Date(today);
+      monday.setDate(today.getDate() + diffToMonday);
+      monday.setHours(0, 0, 0, 0);
+      
+      state.mondayDate = monday;
+      
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      sunday.setHours(23, 59, 59, 999);
+      
+      state.sundayDate = sunday;
+    }
+
+    // Format Date with Local Timezone Offset (for Supabase postgrest compatibility)
+    function getLocalISOString(date) {
+      const tzOffset = -date.getTimezoneOffset();
+      const diff = tzOffset >= 0 ? '+' : '-';
+      const pad = num => String(Math.floor(Math.abs(num))).padStart(2, '0');
+      
+      return date.getFullYear() +
+        '-' + pad(date.getMonth() + 1) +
+        '-' + pad(date.getDate()) +
+        'T' + pad(date.getHours()) +
+        ':' + pad(date.getMinutes()) +
+        ':' + pad(date.getSeconds()) +
+        diff + pad(tzOffset / 60) +
+        ':' + pad(tzOffset % 60);
+    }
+
+    // --- DATA UTILITIES & AGGREGATION ---
+    function processEvents(events) {
+      let bookings = 0;
+      let cancellations = 0;
+      const creationsByDay = [0, 0, 0, 0, 0, 0, 0]; // Mon-Sun
+      const activityLogs = [];
+
+      events.forEach(event => {
+        const type = (event.event_type || event.action || event.event || "").toLowerCase();
+        
+        // Define if it is booking creation or cancellation event
+        const isBooking = type.includes("book") || type.includes("create") || type.includes("insert") || type.includes("add") || type === "booking";
+        const isCancellation = type.includes("cancel") || type.includes("delete") || type.includes("remove") || type === "cancellation";
+
+        // Parse payload variables safely
+        const payload = event.metadata || event.payload || event.details || event;
+        const name = event.name || payload.name || payload.playerName || payload.player_name || "Club Member";
+        const table = event.table || payload.table || payload.tableId || payload.table_id || "";
+        const slot = event.slot || payload.slot || "";
+        
+        let displayType = "";
+        let desc = "";
+
+        if (isBooking) {
+          bookings++;
+          displayType = "booking";
+          desc = `${name}`;
+          if (table) desc += ` booked Table ${table}`;
+          if (slot) desc += ` (${slot})`;
+          else desc += ` seat`;
+
+          // Track creation day
+          const date = new Date(event.created_at);
+          if (!isNaN(date.getTime())) {
+            const dayOfWeek = date.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+            const mappedIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Map to Mon=0...Sun=6
+            creationsByDay[mappedIndex]++;
+          }
+        } else if (isCancellation) {
+          cancellations++;
+          displayType = "cancellation";
+          desc = `${name}`;
+          if (table) desc += ` cancelled Table ${table}`;
+          if (slot) desc += ` (${slot})`;
+          else desc += ` reservation`;
+        } else {
+          // Fallback event types
+          displayType = "booking";
+          desc = `${name} updated scheduling record`;
+        }
+
+        activityLogs.push({
+          id: event.id || Math.random().toString(),
+          type: displayType,
+          description: desc,
+          time: new Date(event.created_at)
+        });
+      });
+
+      state.bookingsCount = bookings;
+      state.cancellationsCount = cancellations;
+      state.dailyCreations = creationsByDay;
+      state.recentEvents = activityLogs.slice(0, 15); // keep latest 15 events
+    }
+
+    // --- SCREEN NAVIGATION / VIEW SWAP ---
+    function showSection(viewId) {
+      document.getElementById("setup-view").classList.add("hidden");
+      document.getElementById("loading-view").classList.add("hidden");
+      document.getElementById("error-view").classList.add("hidden");
+      document.getElementById("dashboard-view").classList.add("hidden");
+
+      document.getElementById(viewId).classList.remove("hidden");
+    }
+
+    // --- DATA FETCHING ---
+    async function fetchUsageEvents() {
+      if (!checkConfigured()) {
+        showSection("setup-view");
+        return;
+      }
+
+      showSection("loading-view");
+      document.getElementById("loading-status-text").innerText = "Querying Supabase API...";
+      
+      const refreshBtn = document.getElementById("btn-refresh");
+      refreshBtn.classList.add("loading");
+      refreshBtn.disabled = true;
+
+      try {
+        const localISO = getLocalISOString(state.mondayDate);
+        
+        // Build GET request with week filter and descending order
+        const queryUrl = `${SUPABASE_URL}/rest/v1/usage_events?created_at=gte.${encodeURIComponent(localISO)}&order=created_at.desc`;
+        
+        const response = await fetch(queryUrl, {
+          method: "GET",
+          headers: {
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+            "x-is-dashboard": "true",
+            "Content-Type": "application/json"
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+        }
+
+        const events = await response.json();
+        
+        processEvents(events);
+        updateUI();
+        showSection("dashboard-view");
+      } catch (err) {
+        console.error("Dashboard Sync Error:", err);
+        document.getElementById("error-message").innerText = err.message || "Failed to reach Supabase server. Verify URL endpoint, anonymous access keys, or network connectivity.";
+        showSection("error-view");
+      } finally {
+        refreshBtn.classList.remove("loading");
+        refreshBtn.disabled = false;
+      }
+    }
+
+    // --- UI RENDERING & COMPONENT UPDATE ---
+    function updateUI() {
+      // Date Range Text
+      const formatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+      const rangeText = `Week of ${state.mondayDate.toLocaleDateString('en-US', formatOptions)} - ${state.sundayDate.toLocaleDateString('en-US', formatOptions)}`;
+      document.getElementById("date-range-display").innerText = rangeText;
+
+      // KPIs
+      document.getElementById("kpi-bookings-count").innerText = state.bookingsCount;
+      document.getElementById("kpi-cancellations-count").innerText = state.cancellationsCount;
+      
+      const netDelta = state.bookingsCount - state.cancellationsCount;
+      const netElement = document.getElementById("kpi-net-count");
+      netElement.innerText = netDelta;
+      
+      // Update Net trend icons
+      const trendIcon = document.getElementById("net-trend-icon");
+      if (netDelta > 0) {
+        trendIcon.setAttribute("data-lucide", "trending-up");
+        trendIcon.parentElement.style.color = "var(--color-bamboo-light)";
+      } else if (netDelta < 0) {
+        trendIcon.setAttribute("data-lucide", "trending-down");
+        trendIcon.parentElement.style.color = "#c92a2a";
+      } else {
+        trendIcon.setAttribute("data-lucide", "minus");
+        trendIcon.parentElement.style.color = "var(--color-text-muted)";
+      }
+
+      // Recent Activity Feed
+      const feedList = document.getElementById("activity-feed-list");
+      feedList.innerHTML = "";
+
+      if (state.recentEvents.length === 0) {
+        feedList.innerHTML = `
+          <div class="activity-empty-state">
+            <i data-lucide="info" style="width: 28px; height: 28px;"></i>
+            <p>No activity logs found for this week.<br>Select bookings or cancellations in the portal to log events.</p>
+          </div>
+        `;
+      } else {
+        state.recentEvents.forEach(evt => {
+          const item = document.createElement("div");
+          item.className = "activity-item";
+
+          const isBooking = evt.type === "booking";
+          const badgeClass = isBooking ? "badge-booking" : "badge-cancellation";
+          const badgeLabel = isBooking ? "Booked" : "Cancelled";
+          
+          const timeFormat = evt.time.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' @ ' + evt.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+          item.innerHTML = `
+            <div class="activity-meta">
+              <span class="activity-badge ${badgeClass}">${badgeLabel}</span>
+              <span class="activity-time">${timeFormat}</span>
+            </div>
+            <div class="activity-desc">${evt.description}</div>
+          `;
+          feedList.appendChild(item);
+        });
+      }
+
+      // Render chart
+      renderChart(state.dailyCreations);
+
+      // Last Updated time
+      const now = new Date();
+      document.getElementById("last-updated-text").innerText = `Last updated: ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+      
+      lucide.createIcons();
+    }
+
+    // --- CHART.JS AGGREGATION RENDER ---
+    function renderChart(chartData) {
+      const ctx = document.getElementById('bookingChart').getContext('2d');
+      
+      if (bookingChart) {
+        bookingChart.destroy();
+      }
+
+      bookingChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+          datasets: [{
+            label: 'Bookings Created',
+            data: chartData,
+            backgroundColor: '#1b4332', // Deep forest green
+            hoverBackgroundColor: '#d4af37', // Gold highlight
+            borderRadius: 6,
+            borderSkipped: false,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              backgroundColor: '#2c3531',
+              titleColor: '#f4f1de',
+              titleFont: {
+                family: 'Outfit',
+                weight: 'bold',
+                size: 13
+              },
+              bodyColor: '#ffffff',
+              bodyFont: {
+                family: 'Inter',
+                size: 12
+              },
+              padding: 10,
+              cornerRadius: 8,
+              displayColors: false
+            }
+          },
+          scales: {
+            x: {
+              grid: {
+                display: false
+              },
+              ticks: {
+                color: '#2c3531',
+                font: {
+                  family: 'Outfit',
+                  weight: 'bold'
+                }
+              }
+            },
+            y: {
+              grid: {
+                color: 'rgba(27, 67, 50, 0.05)'
+              },
+              ticks: {
+                color: '#6b7770',
+                font: {
+                  family: 'Inter'
+                },
+                stepSize: 1,
+                precision: 0
+              },
+              min: 0
+            }
+          }
+        }
+      });
+    }
+
+    // --- INITIALIZE PAGE ---
+    document.addEventListener("DOMContentLoaded", () => {
+      computeCurrentWeekMonday();
+      
+      // Wire up event listeners
+      document.getElementById("btn-refresh").addEventListener("click", fetchUsageEvents);
+      document.getElementById("btn-retry").addEventListener("click", fetchUsageEvents);
+
+      // Start initial load
+      if (!checkConfigured()) {
+        showSection("setup-view");
+        lucide.createIcons();
+      } else {
+        fetchUsageEvents();
+      }
+    });
+  </script>
+</body>
+</html>

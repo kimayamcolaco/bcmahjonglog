@@ -1,6 +1,9 @@
 // Bangalore Club Mahjong Log - App Logic (Cloud Database Sync & Current Week Filtering)
 
 // --- Constants & Config ---
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
 const MORNING_TIMES = [
   "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM", "1:00 PM", "1:30 PM"
 ];
@@ -9,10 +12,12 @@ const AFTERNOON_TIMES = [
   "2:00 PM", "2:30 PM", "3:00 PM", "3:30 PM", "4:00 PM", "4:30 PM", "5:00 PM", "5:30 PM", "6:00 PM"
 ];
 
-// Unique database key on kvdb.io (shared free KV store) or Netlify Serverless Proxy
+// Unique database key on kvdb.io (shared free KV store) or Serverless Proxy (Netlify or Vercel)
 const DB_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
   ? "https://kvdb.io/SvmeRCjC2rgQ5SvPj5n7y7/bookings"
-  : "/.netlify/functions/bookings";
+  : (window.location.hostname.includes("netlify.app")
+      ? "/.netlify/functions/bookings"
+      : "/api/bookings");
 
 
 // --- State ---
@@ -25,13 +30,22 @@ let state = {
 // --- Helper: Date Range & Rolling Week Calculations ---
 function getCurrentWeekDates() {
   const today = new Date();
-  const currentDay = today.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+  const day = today.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+  const hour = today.getHours();
   
   let diffToMonday = 0;
-  if (currentDay === 0) {
-    diffToMonday = 1; // Today is Sunday, Monday is tomorrow
+  
+  // Rollover check: Saturday 8:00 PM (20:00) or Sunday rolls over to the next week
+  const isRollover = (day === 0) || (day === 6 && hour >= 20);
+  
+  if (isRollover) {
+    if (day === 0) {
+      diffToMonday = 1; // Sunday: Monday is tomorrow (1 day away)
+    } else {
+      diffToMonday = 2; // Saturday: Monday is in 2 days
+    }
   } else {
-    diffToMonday = 1 - currentDay; // Monday is in the past or today
+    diffToMonday = 1 - day; // Monday is today or in the past
   }
   
   const monday = new Date(today);
@@ -148,6 +162,30 @@ async function saveDatabaseBookings(bookingsList, cancelPin = null) {
   }
 }
 
+async function logUsageEvents(events) {
+  if (SUPABASE_URL.includes("YOUR_SUPABASE") || SUPABASE_ANON_KEY.includes("YOUR_SUPABASE")) {
+    console.warn("Supabase URL or Anon Key is still a placeholder. Skipping usage logging.");
+    return;
+  }
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/usage_events`, {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal"
+      },
+      body: JSON.stringify(events)
+    });
+    if (!response.ok) {
+      console.warn("Usage events logging failed:", response.status, response.statusText);
+    }
+  } catch (err) {
+    console.warn("Failed to log usage events:", err);
+  }
+}
+
 async function initializeSeedData() {
   const weekDates = getCurrentWeekDates();
   const seed = [
@@ -227,13 +265,19 @@ function updateDayButtons() {
 }
 
 // Set current day automatically based on system clock (Mon-Sat, else Monday)
+// Incorporates Saturday 8:00 PM rollover to default to Monday.
 function setInitialDay() {
-  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const currentDayName = days[new Date().getDay()];
-  if (currentDayName !== "Sunday") {
-    state.currentDay = currentDayName;
+  const today = new Date();
+  const day = today.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+  const hour = today.getHours();
+  
+  const isRollover = (day === 0) || (day === 6 && hour >= 20);
+  
+  if (isRollover) {
+    state.currentDay = "Monday";
   } else {
-    state.currentDay = "Monday"; // Sunday rolls over to Monday
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    state.currentDay = days[day];
   }
   
   // Set active class on active button
@@ -602,9 +646,9 @@ function openDetailsModal(booking) {
   const warningDesc = document.getElementById("cancel-warning-desc");
   if (groupBookings.length > 1) {
     const primaryName = groupBookings.find(b => !b.name.includes("(+"))?.name || groupBookings[0].name;
-    warningDesc.innerHTML = `<strong>Group Booking Warning:</strong> Cancelling this will cancel ALL ${groupBookings.length} seats reserved under this group ("${primaryName}").<br><br>Please enter your 4-digit PIN to cancel:`;
+    warningDesc.innerHTML = `<strong>Group Booking Warning:</strong> Cancelling this will cancel ALL ${groupBookings.length} seats reserved under this group ("${primaryName}").<br><br>Please enter your Club ID to cancel:`;
   } else {
-    warningDesc.innerText = "To cancel, please enter your 4-digit PIN below:";
+    warningDesc.innerText = "To cancel, please enter your Club ID below:";
   }
   
   document.getElementById("details-modal").classList.remove("hidden");
@@ -672,15 +716,15 @@ async function handleNewBooking() {
   const guestCount = parseInt(document.getElementById("player-guests").value);
   const timeStart = document.getElementById("player-time-start").value;
   const gameType = document.getElementById("player-game-type").value;
-  const pin = document.getElementById("player-pin").value.trim();
+  const pin = document.getElementById("player-pin").value.trim().toUpperCase();
   const needSet = document.getElementById("player-need-set").checked;
   
   if (!name) {
     showToast("Please enter a name.", "error");
     return;
   }
-  if (!/^\d{4}$/.test(pin)) {
-    showToast("Please enter a valid 4-digit PIN.", "error");
+  if (!/^[A-Z]\d{3}$/.test(pin)) {
+    showToast("Please enter a valid Club ID (e.g. S954).", "error");
     return;
   }
 
@@ -832,6 +876,21 @@ async function handleNewBooking() {
   if (success) {
     state.bookings = updatedBookings;
     updateView();
+    const events = newGroupBookings.map(b => ({
+      event_type: "booking_created",
+      id: b.id,
+      date: b.date,
+      day: b.day,
+      slot: b.slot,
+      table: b.table,
+      seat: b.seat,
+      name: b.name,
+      timeStart: b.timeStart,
+      needSet: b.needSet,
+      gameType: b.gameType,
+      groupId: b.groupId
+    }));
+    logUsageEvents(events);
     if (guestCount > 0) {
       showToast(`Booked ${guestCount + 1} seats at Table ${table} for ${name} and guests!`);
     } else {
@@ -854,11 +913,11 @@ async function handleCancelBooking() {
   const primaryName = primaryBooking.name;
   
   const cancelInput = document.getElementById("cancel-pin-input");
-  const cancelPin = cancelInput.value.trim();
+  const cancelPin = cancelInput.value.trim().toUpperCase();
   
-  if (!/^\d{4}$/.test(cancelPin)) {
+  if (!/^[A-Z]\d{3}$/.test(cancelPin)) {
     const errorText = document.getElementById("cancel-error");
-    errorText.innerText = "Please enter a valid 4-digit PIN.";
+    errorText.innerText = "Please enter a valid Club ID (e.g. S954).";
     errorText.classList.remove("hidden");
     cancelInput.focus();
     return;
@@ -899,6 +958,21 @@ async function handleCancelBooking() {
     if (success) {
       state.bookings = updatedBookings;
       updateView();
+      const events = groupBookings.map(b => ({
+        event_type: "booking_cancelled",
+        id: b.id,
+        date: b.date,
+        day: b.day,
+        slot: b.slot,
+        table: b.table,
+        seat: b.seat,
+        name: b.name,
+        timeStart: b.timeStart,
+        needSet: b.needSet,
+        gameType: b.gameType,
+        groupId: b.groupId
+      }));
+      logUsageEvents(events);
       if (groupBookings.length > 1) {
         showToast(`Cancelled all ${groupBookings.length} bookings under group "${primaryName}".`, "warning");
       } else {

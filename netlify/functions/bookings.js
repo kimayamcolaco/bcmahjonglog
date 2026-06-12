@@ -103,7 +103,7 @@ exports.handler = async function (event, context) {
               "Access-Control-Allow-Headers": "Content-Type, X-Cancel-Pin",
               "Content-Type": "application/json"
             },
-            body: JSON.stringify({ error: "Incorrect PIN! Cancellation denied." })
+            body: JSON.stringify({ error: "Incorrect Club ID! Cancellation denied." })
           };
         }
       }

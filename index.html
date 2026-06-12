@@ -155,8 +155,8 @@
         </div>
 
         <div class="form-group">
-          <label for="player-pin">4-Digit PIN</label>
-          <input type="password" id="player-pin" required pattern="[0-9]{4}" inputmode="numeric" maxlength="4" placeholder="Enter 4-digit PIN (e.g. 1234)">
+          <label for="player-pin">Club ID</label>
+          <input type="password" id="player-pin" required pattern="[A-Za-z][0-9]{3}" maxlength="4" placeholder="Enter Club ID (e.g. S954)">
           <p class="input-tip">Required for cancellation. Remember to cancel if you won't make it.</p>
         </div>
 
@@ -211,11 +211,11 @@
         </div>
 
         <div class="cancel-confirm-area" id="cancel-confirm-area">
-          <p class="warning-text" id="cancel-warning-desc">To cancel, please enter your 4-digit PIN below:</p>
+          <p class="warning-text" id="cancel-warning-desc">To cancel, please enter your Club ID below:</p>
           <div class="form-group">
-            <input type="password" id="cancel-pin-input" required pattern="[0-9]{4}" inputmode="numeric" maxlength="4" placeholder="Enter 4-digit PIN to cancel">
+            <input type="password" id="cancel-pin-input" required pattern="[A-Za-z][0-9]{3}" maxlength="4" placeholder="Enter Club ID to cancel">
           </div>
-          <p class="error-text hidden" id="cancel-error">Incorrect PIN! Please try again.</p>
+          <p class="error-text hidden" id="cancel-error">Incorrect Club ID! Please try again.</p>
         </div>
       </div>
       <div class="modal-actions">
