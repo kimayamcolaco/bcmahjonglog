@@ -19,7 +19,7 @@ Welcome to the new Bangalore Club Mahjong scheduling portal! To ensure cooperati
 3. **Fill in Details:**
    * **Your Name:** Enter your full name.
    * **Add Guests (Optional):** Select if you are booking for yourself only, or adding `+1`, `+2`, or `+3` guests. The system will automatically reserve adjacent seats for your group.
-   * **Start Time & Mahjong Type:** Choose when you will start playing and which style you are playing (Taiwanese, ATF, Singapore, or Western). 
+   * **Start Time & Mahjong Type:** Choose when you will start playing and which style you are playing (Taiwanese, ATF, Singapore, Western, or Classic). 
    * **Enter Club ID:** Type in your Club ID (consisting of 1 letter and 3 digits, e.g. **A123**). *This acts as your password to cancel this booking later.*
    * **Reserve a Club Set:** Check the *"I need a Mahjong Set"* box if your group does not have a personal set. 
 
