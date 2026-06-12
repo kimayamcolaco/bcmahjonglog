@@ -12,12 +12,10 @@ const AFTERNOON_TIMES = [
   "2:00 PM", "2:30 PM", "3:00 PM", "3:30 PM", "4:00 PM", "4:30 PM", "5:00 PM", "5:30 PM", "6:00 PM"
 ];
 
-// Unique database key on kvdb.io (shared free KV store) or Serverless Proxy (Netlify or Vercel)
+// Unique database key on kvdb.io (shared free KV store) or Vercel Serverless Proxy
 const DB_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
   ? "https://kvdb.io/SvmeRCjC2rgQ5SvPj5n7y7/bookings"
-  : (window.location.hostname.includes("netlify.app")
-      ? "/.netlify/functions/bookings"
-      : "/api/bookings");
+  : "/api/bookings";
 
 
 // --- State ---
@@ -724,7 +722,7 @@ async function handleNewBooking() {
     return;
   }
   if (!/^[A-Z]\d{3}$/.test(pin)) {
-    showToast("Please enter a valid Club ID (e.g. S954).", "error");
+    showToast("Please enter a valid Club ID (e.g. A123).", "error");
     return;
   }
 
@@ -917,7 +915,7 @@ async function handleCancelBooking() {
   
   if (!/^[A-Z]\d{3}$/.test(cancelPin)) {
     const errorText = document.getElementById("cancel-error");
-    errorText.innerText = "Please enter a valid Club ID (e.g. S954).";
+    errorText.innerText = "Please enter a valid Club ID (e.g. A123).";
     errorText.classList.remove("hidden");
     cancelInput.focus();
     return;
