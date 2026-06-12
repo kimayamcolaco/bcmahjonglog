@@ -505,6 +505,9 @@ h1, h2, h3, h4 {
   color: var(--color-text-light);
   border-color: rgba(255, 255, 255, 0.3);
 }
+.table-card.table-full-needs-set .table-set-header-badge svg {
+  color: var(--color-text-light);
+}
 .table-card.table-full-needs-set .table-card-status {
   background: rgba(255, 255, 255, 0.2);
   color: var(--color-text-light);
@@ -600,6 +603,19 @@ h1, h2, h3, h4 {
 .table-type-header-badge svg {
   width: 10px;
   height: 10px;
+}
+
+/* Color overrides for type badges on dark green and gold full-table headers */
+.table-card.table-full .table-type-header-badge,
+.table-card.table-full-needs-set .table-type-header-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--color-text-light);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.table-card.table-full .table-type-header-badge svg,
+.table-card.table-full-needs-set .table-type-header-badge svg {
+  color: var(--color-text-light);
 }
 
 
