@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bangalore Club Mahjong Log — Copy to Google Docs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Georgia&family=Arial&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f0f2f5;
+      font-family: 'Arial', sans-serif;
+      padding: 2rem 1rem;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .toolbar {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: white;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      margin-bottom: 1.5rem;
+      box-sizing: border-box;
+    }
+
+    .toolbar-title {
+      font-weight: bold;
+      color: #1b4332;
+      font-size: 0.95rem;
+    }
+
+    .btn-copy {
+      background-color: #1b4332;
+      color: white;
+      border: none;
+      padding: 0.6rem 1.25rem;
+      font-size: 0.85rem;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background-color 0.2s ease;
+    }
+
+    .btn-copy:hover {
+      background-color: #2d6a4f;
+    }
+
+    .btn-copy:active {
+      transform: scale(0.98);
+    }
+
+    .paper-sheet {
+      background: white;
+      width: 100%;
+      max-width: 800px;
+      min-height: 1000px;
+      padding: 4rem;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+      border-radius: 4px;
+      box-sizing: border-box;
+      outline: none;
+    }
+
+    /* Google Docs Copyable Styles */
+    .doc-title {
+      font-family: 'Arial', sans-serif;
+      font-size: 26pt;
+      font-weight: bold;
+      color: #1b4332;
+      margin-bottom: 6pt;
+      text-align: center;
+    }
+
+    .doc-subtitle {
+      font-family: 'Arial', sans-serif;
+      font-size: 16pt;
+      color: #666666;
+      margin-bottom: 24pt;
+      text-align: center;
+      border-bottom: 1px solid #dddddd;
+      padding-bottom: 12pt;
+    }
+
+    .doc-h2 {
+      font-family: 'Arial', sans-serif;
+      font-size: 15pt;
+      font-weight: bold;
+      color: #1b4332;
+      margin-top: 18pt;
+      margin-bottom: 6pt;
+      border-bottom: 1px solid rgba(27, 67, 50, 0.15);
+      padding-bottom: 3pt;
+    }
+
+    .doc-p {
+      font-family: 'Arial', sans-serif;
+      font-size: 11pt;
+      line-height: 1.5;
+      color: #333333;
+      margin-top: 0;
+      margin-bottom: 10pt;
+    }
+
+    .doc-list {
+      font-family: 'Arial', sans-serif;
+      font-size: 11pt;
+      line-height: 1.5;
+      color: #333333;
+      margin-bottom: 10pt;
+      padding-left: 20pt;
+    }
+
+    .doc-list-item {
+      margin-bottom: 4pt;
+    }
+
+    .doc-important-box {
+      background-color: #f4f1de;
+      border-left: 4px solid #d4af37;
+      padding: 10pt 15pt;
+      margin-bottom: 12pt;
+      border-radius: 4px;
+    }
+
+    .doc-bold {
+      font-weight: bold;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      background: #222;
+      color: white;
+      padding: 0.8rem 1.5rem;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s ease;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="toolbar">
+    <div class="toolbar-title">📄 Ready to export to Google Docs</div>
+    <button class="btn-copy" onclick="copyDocument()">
+      📋 Copy Formatted Document
+    </button>
+  </div>
+
+  <!-- Styled Document Container -->
+  <div class="paper-sheet" id="doc-content" contenteditable="true">
+    <div class="doc-title">🀄 Bangalore Club Mahjong Log</div>
+    <div class="doc-subtitle">Member Scheduling & Booking Portal Guide</div>
+
+    <div class="doc-p">Welcome to the new Bangalore Club Mahjong scheduling portal! To ensure cooperative play and fair sharing of resources, please review this quick guide on how to book and manage your sessions.</div>
+
+    <div class="doc-h2">1. Accessing the Portal</div>
+    <ul class="doc-list">
+      <li class="doc-list-item"><span class="doc-bold">Website Link:</span> <a href="https://bcmahjonglog.vercel.app" style="color: #1b4332; font-weight: bold;">https://bcmahjonglog.vercel.app</a> (bookmark this on your mobile phone or laptop)</li>
+      <li class="doc-list-item"><span class="doc-bold">Weekly Schedule:</span> The calendar runs <span class="doc-bold">Monday to Saturday</span> (closed Sundays).</li>
+      <li class="doc-list-item"><span class="doc-bold">Rollover Time:</span> The schedule automatically rolls over to the next week every <span class="doc-bold">Saturday evening at 8:00 PM</span>. Bookings for the upcoming week open at this time.</li>
+    </ul>
+
+    <div class="doc-h2">2. How to Book a Seat</div>
+    <ol class="doc-list">
+      <li class="doc-list-item"><span class="doc-bold">Choose Day & Slot:</span> At the top of the screen, select the <span class="doc-bold">Day</span> and the <span class="doc-bold">Session Slot</span> (Morning: 10:00 AM – 1:30 PM | Afternoon: 2:00 PM – 6:00 PM).</li>
+      <li class="doc-list-item"><span class="doc-bold">Select an Empty Seat:</span> Scan the 9 tables in the room layout. Click <span class="doc-bold">+ Book Seat</span> on any empty slot.</li>
+      <li class="doc-list-item"><span class="doc-bold">Fill in Details:</span>
+        <ul style="padding-left: 15pt; margin-top: 4pt;">
+          <li style="margin-bottom: 3pt;"><span class="doc-bold">Your Name:</span> Enter your full name.</li>
+          <li style="margin-bottom: 3pt;"><span class="doc-bold">Add Guests (Optional):</span> Select if you are booking for yourself only, or adding +1, +2, or +3 guests. The system will automatically reserve adjacent seats for your group.</li>
+          <li style="margin-bottom: 3pt;"><span class="doc-bold">Start Time & Mahjong Type:</span> Choose when you will start playing and which style you are playing (Taiwanese, ATF, Singapore, or Western).</li>
+          <li style="margin-bottom: 3pt;"><span class="doc-bold">Enter Club ID:</span> Type in your Club ID (consisting of 1 letter and 3 digits, e.g. <span class="doc-bold">A123</span>). <span style="font-style: italic;">This acts as your password to cancel this booking later.</span></li>
+          <li style="margin-bottom: 3pt;"><span class="doc-bold">Reserve a Club Set:</span> Check the checkbox if your group does not have a personal set.</li>
+        </ul>
+      </li>
+    </ol>
+
+    <div class="doc-h2">3. Cooperative Table Locking (Shared Rules)</div>
+    <div class="doc-p">To make sure everyone at a table is playing the same session, we use shared table rules:</div>
+    <ul class="doc-list">
+      <li class="doc-list-item"><span class="doc-bold">First Booking Locks Rules:</span> The first person to book a seat at a table sets the <span class="doc-bold">Start Time</span> and the <span class="doc-bold">Mahjong Type</span> for that table.</li>
+      <li class="doc-list-item"><span class="doc-bold">Joining a Table:</span> Subsequent members booking empty seats at that same table will have their start time and game style locked automatically to match the first booking.</li>
+      <li class="doc-list-item"><span class="doc-bold">Club Sets Limit:</span> The club has <span class="doc-bold">4 Mahjong Sets</span> available for use. If all 4 sets are claimed by other tables, the set-request checkbox will be disabled, and you must bring a personal set to play.</li>
+    </ul>
+
+    <div class="doc-h2">4. How to Cancel a Booking</div>
+    <div class="doc-p">If your plans change, <span class="doc-bold">please cancel as early as possible</span> so other members can enjoy the tables.</div>
+    <ol class="doc-list">
+      <li class="doc-list-item">Tap or click on your booked seat card.</li>
+      <li class="doc-list-item">Enter your <span class="doc-bold">Club ID</span> (it is case-insensitive, so both <span class="doc-bold">a123</span> and <span class="doc-bold">A123</span> will work).</li>
+      <li class="doc-list-item">Click <span class="doc-bold">Remove Booking</span>. If you booked with guests, this will automatically free up all seats reserved under your name.</li>
+    </ol>
+
+    <div class="doc-important-box">
+      <div class="doc-p" style="margin: 0;"><span class="doc-bold">💡 Friendly Reminders:</span></div>
+      <ul class="doc-list" style="margin-top: 6pt; margin-bottom: 0; padding-left: 15pt;">
+        <li class="doc-list-item">Bring your own Mahjong set if you have one, leaving the 4 Club Sets for groups who do not.</li>
+        <li class="doc-list-item">Double-check your table's locked start time before completing a booking to ensure it matches your schedule.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Copy successful! Now open Google Docs and paste (Ctrl+V).</div>
+
+  <script>
+    function copyDocument() {
+      const docElement = document.getElementById('doc-content');
+      
+      // Select the content
+      const range = document.createRange();
+      range.selectNodeContents(docElement);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      
+      try {
+        // Execute copy command
+        const successful = document.execCommand('copy');
+        if (successful) {
+          showToast();
+        } else {
+          alert('Failed to copy. Please manually select the document text (Ctrl+A) and copy (Ctrl+C).');
+        }
+      } catch (err) {
+        alert('Browser does not support copy command. Please manually select the document text (Ctrl+A) and copy (Ctrl+C).');
+      }
+      
+      // Deselect
+      selection.removeAllRanges();
+    }
+
+    function showToast() {
+      const toast = document.getElementById('toast');
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 4000);
+    }
+  </script>
+</body>
+</html>
