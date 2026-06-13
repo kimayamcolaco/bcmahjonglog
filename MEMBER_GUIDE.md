@@ -7,7 +7,7 @@ Welcome to the new Bangalore Club Mahjong scheduling portal! To ensure cooperati
 ### 1. Accessing the Portal
 * **Website Link:** `https://bcmahjonglog.vercel.app` (bookmark this on your mobile phone or laptop)
 * **Weekly Schedule:** The calendar runs **Monday to Saturday** (closed Sundays).
-* **Rollover Time:** The schedule automatically rolls over to the next week every **Saturday evening at 8:00 PM**. Bookings for the upcoming week open at this time.
+* **Rollover Time:** The schedule automatically rolls over to the next week every **Saturday evening at 8:00 PM IST**. Bookings for the upcoming week open at this time.
 
 ---
 

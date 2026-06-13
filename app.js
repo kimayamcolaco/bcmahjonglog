@@ -25,9 +25,34 @@ let state = {
   bookings: []
 };
 
-// --- Helper: Date Range & Rolling Week Calculations ---
+// Helper to get a Date object aligned with India Standard Time (IST) components
+function getISTDate() {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+    hour12: false
+  });
+  const parts = formatter.formatToParts(new Date());
+  const partMap = {};
+  parts.forEach(p => partMap[p.type] = p.value);
+  
+  return new Date(
+    parseInt(partMap.year),
+    parseInt(partMap.month) - 1,
+    parseInt(partMap.day),
+    parseInt(partMap.hour),
+    parseInt(partMap.minute),
+    parseInt(partMap.second)
+  );
+}
+
 function getCurrentWeekDates() {
-  const today = new Date();
+  const today = getISTDate();
   const day = today.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
   const hour = today.getHours();
   
@@ -51,6 +76,7 @@ function getCurrentWeekDates() {
   
   const weekDates = {};
   const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   
   for (let i = 0; i < 6; i++) {
     const d = new Date(monday);
@@ -61,7 +87,7 @@ function getCurrentWeekDates() {
     
     weekDates[dayNames[i]] = {
       dateString: `${year}-${month}-${date}`,
-      label: d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      label: `${monthNames[d.getMonth()]} ${d.getDate()}`
     };
   }
   return weekDates;
@@ -265,7 +291,7 @@ function updateDayButtons() {
 // Set current day automatically based on system clock (Mon-Sat, else Monday)
 // Incorporates Saturday 8:00 PM rollover to default to Monday.
 function setInitialDay() {
-  const today = new Date();
+  const today = getISTDate();
   const day = today.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
   const hour = today.getHours();
   
