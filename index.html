@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=2.1">
+  <link rel="stylesheet" href="style.css?v=2.3">
   <!-- Lucide Icons (CDN) -->
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -156,7 +156,7 @@
 
         <div class="form-group">
           <label for="player-pin">Club ID</label>
-          <input type="password" id="player-pin" required pattern="[A-Za-z][0-9]{3}" maxlength="4" placeholder="Enter Club ID (e.g. A123)">
+          <input type="password" id="player-pin" required pattern="[A-Za-z0-9]{1,5}" maxlength="5" placeholder="Enter Club ID (up to 5 chars)">
           <p class="input-tip">Required for cancellation. Remember to cancel if you won't make it.</p>
         </div>
 
@@ -213,7 +213,7 @@
         <div class="cancel-confirm-area" id="cancel-confirm-area">
           <p class="warning-text" id="cancel-warning-desc">To cancel, please enter your Club ID below:</p>
           <div class="form-group">
-            <input type="password" id="cancel-pin-input" required pattern="[A-Za-z][0-9]{3}" maxlength="4" placeholder="Enter Club ID to cancel">
+            <input type="password" id="cancel-pin-input" required pattern="[A-Za-z0-9]{1,5}" maxlength="5" placeholder="Enter Club ID to cancel">
           </div>
           <p class="error-text hidden" id="cancel-error">Incorrect Club ID! Please try again.</p>
         </div>
@@ -229,6 +229,6 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Main JavaScript File -->
-  <script src="app.js?v=2.2"></script>
+  <script src="app.js?v=2.3"></script>
 </body>
 </html>

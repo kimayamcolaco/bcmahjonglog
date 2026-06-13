@@ -747,8 +747,8 @@ async function handleNewBooking() {
     showToast("Please enter a name.", "error");
     return;
   }
-  if (!/^[A-Z]\d{3}$/.test(pin)) {
-    showToast("Please enter a valid Club ID (e.g. A123).", "error");
+  if (!/^[A-Za-z0-9]{1,5}$/.test(pin)) {
+    showToast("Please enter a valid Club ID (up to 5 characters).", "error");
     return;
   }
 
@@ -939,9 +939,9 @@ async function handleCancelBooking() {
   const cancelInput = document.getElementById("cancel-pin-input");
   const cancelPin = cancelInput.value.trim().toUpperCase();
   
-  if (!/^[A-Z]\d{3}$/.test(cancelPin)) {
+  if (!/^[A-Za-z0-9]{1,5}$/.test(cancelPin)) {
     const errorText = document.getElementById("cancel-error");
-    errorText.innerText = "Please enter a valid Club ID (e.g. A123).";
+    errorText.innerText = "Please enter a valid Club ID (up to 5 characters).";
     errorText.classList.remove("hidden");
     cancelInput.focus();
     return;
