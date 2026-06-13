@@ -748,7 +748,7 @@ async function handleNewBooking() {
     return;
   }
   if (!/^[A-Za-z0-9]{1,5}$/.test(pin)) {
-    showToast("Please enter a valid Club ID (up to 5 characters).", "error");
+    showToast("Please enter a valid Club ID (e.g. A123 or LA123).", "error");
     return;
   }
 
@@ -941,7 +941,7 @@ async function handleCancelBooking() {
   
   if (!/^[A-Za-z0-9]{1,5}$/.test(cancelPin)) {
     const errorText = document.getElementById("cancel-error");
-    errorText.innerText = "Please enter a valid Club ID (up to 5 characters).";
+    errorText.innerText = "Please enter a valid Club ID (e.g. A123 or LA123).";
     errorText.classList.remove("hidden");
     cancelInput.focus();
     return;
