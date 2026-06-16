@@ -144,9 +144,8 @@ module.exports = async (req, res) => {
       });
     });
 
-    // 3. Write summary stats back to Supabase (Upsert)
-    const historyUrl = `${supabaseUrl}/rest/v1/weekly_stats_history`;
-    const upsertBody = {
+    // 3. Compile report data
+    const reportData = {
       week_start_date: prevMondayStr,
       total_bookings: totalBookings,
       total_cancellations: totalCancellations,
@@ -155,21 +154,6 @@ module.exports = async (req, res) => {
       total_slots_run: 12,
       bookings_by_day: dailyBookings
     };
-
-    const upsertRes = await fetch(historyUrl, {
-      method: "POST",
-      headers: {
-        "apikey": supabaseKey,
-        "Authorization": `Bearer ${supabaseKey}`,
-        "Content-Type": "application/json",
-        "Prefer": "resolution=merge-duplicates"
-      },
-      body: JSON.stringify(upsertBody)
-    });
-
-    if (!upsertRes.ok) {
-      throw new Error(`Failed to save weekly stats: ${upsertRes.statusText}`);
-    }
 
     // 4. Send email report to kimayamcolaco@gmail.com via Resend API
     let emailSent = false;
@@ -253,7 +237,7 @@ module.exports = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: `Weekly report generated for week ${prevMondayStr} to ${prevSaturdayStr}.`,
-      data: upsertBody,
+      data: reportData,
       emailSent,
       emailError
     });
