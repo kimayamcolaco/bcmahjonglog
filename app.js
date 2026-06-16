@@ -1,8 +1,23 @@
 // Bangalore Club Mahjong Log - App Logic (Cloud Database Sync & Current Week Filtering)
 
 // --- Constants & Config ---
-const SUPABASE_URL = "YOUR_SUPABASE_URL";
-const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+let SUPABASE_URL = "YOUR_SUPABASE_URL";
+let SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+async function loadSupabaseConfig() {
+  try {
+    const response = await fetch("/api/config");
+    if (response.ok) {
+      const config = await response.json();
+      if (config.supabaseUrl && config.supabaseAnonKey) {
+        SUPABASE_URL = config.supabaseUrl;
+        SUPABASE_ANON_KEY = config.supabaseAnonKey;
+      }
+    }
+  } catch (err) {
+    console.warn("Failed to load dynamic Supabase config, using defaults:", err);
+  }
+}
 
 const MORNING_TIMES = [
   "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM", "1:00 PM", "1:30 PM"
@@ -247,10 +262,13 @@ async function performBackgroundSync() {
 }
 
 // --- Initialize App ---
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   setInitialDay();
   updateDayButtons();
   initEventListeners();
+  
+  // Dynamically load Supabase config keys from serverless env variables
+  await loadSupabaseConfig();
   
   // Load local cache first for instant layout rendering
   try {

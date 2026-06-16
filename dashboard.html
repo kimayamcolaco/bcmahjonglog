@@ -619,6 +619,59 @@
     .hidden {
       display: none !important;
     }
+
+    /* Tabs Navigation */
+    .tabs-nav {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 0.25rem;
+      animation: fadeIn 0.4s ease-out;
+    }
+    .tab-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.25rem;
+      border-radius: 30px;
+      background: white;
+      color: var(--color-text-muted);
+      font-family: var(--font-title);
+      font-weight: 700;
+      font-size: 0.85rem;
+      border: 1px solid var(--card-border);
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+    .tab-btn:hover {
+      color: var(--color-bamboo);
+      border-color: var(--color-bamboo-light);
+      background: var(--bg-cream);
+    }
+    .tab-btn.active {
+      background: var(--color-bamboo);
+      color: white;
+      border-color: var(--color-bamboo);
+      box-shadow: 0 4px 12px var(--color-bamboo-glow);
+    }
+
+    /* Progress Bar for Club Sets */
+    .progress-bar-container {
+      width: 100%;
+      height: 8px;
+      background-color: rgba(27, 67, 50, 0.08);
+      border-radius: 4px;
+      margin-top: 0.75rem;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background-color: var(--color-gold);
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+    .progress-bar-fill.danger {
+      background-color: #c92a2a;
+    }
   </style>
 </head>
 <body>
@@ -678,96 +731,203 @@
       </button>
     </div>
 
+    <!-- Tabs Navigation (Visible after configuration is verified) -->
+    <div class="tabs-nav hidden" id="tabs-navigation">
+      <button class="tab-btn active" data-tab="weekly-stats">
+        <i data-lucide="bar-chart-2" style="width: 14px; height: 14px;"></i> Weekly Stats (Live logs)
+      </button>
+      <button class="tab-btn" data-tab="weekly-trends">
+        <i data-lucide="line-chart" style="width: 14px; height: 14px;"></i> Weekly Trends (All-Time)
+      </button>
+    </div>
+
     <!-- DASHBOARD WORKSPACE -->
     <div id="dashboard-view" class="hidden" style="display: flex; flex-direction: column; gap: 1.5rem;">
       
-      <!-- Date Filter & Controls -->
-      <section class="controls-bar">
-        <div class="week-display">
-          <i data-lucide="calendar" style="width: 18px; height: 18px;"></i>
-          <span id="date-range-display">Loading week dates...</span>
-        </div>
-        <div class="controls-actions">
-          <span class="last-updated" id="last-updated-text">Not updated yet</span>
-          <button class="refresh-btn" id="btn-refresh">
-            <i data-lucide="refresh-cw" style="width: 15px; height: 15px;"></i>
-            Refresh Data
-          </button>
-        </div>
-      </section>
+      <!-- Tab 1: Weekly Stats (Live Logs) -->
+      <div id="weekly-stats-tab-content" style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <!-- Date Filter & Controls -->
+        <section class="controls-bar">
+          <div class="week-display">
+            <i data-lucide="calendar" style="width: 18px; height: 18px;"></i>
+            <span id="date-range-display">Loading week dates...</span>
+          </div>
+          <div class="controls-actions">
+            <span class="last-updated" id="last-updated-text">Not updated yet</span>
+            <button class="refresh-btn" id="btn-refresh">
+              <i data-lucide="refresh-cw" style="width: 15px; height: 15px;"></i>
+              Refresh Data
+            </button>
+          </div>
+        </section>
 
-      <!-- KPI Metrics -->
-      <section class="kpi-grid">
-        <div class="kpi-card bookings">
-          <div class="kpi-info">
-            <h3>Bookings Created</h3>
-            <p class="kpi-value" id="kpi-bookings-count">0</p>
-          </div>
-          <div class="kpi-icon-box">
-            <i data-lucide="calendar-plus" style="width: 24px; height: 24px;"></i>
-          </div>
-        </div>
-
-        <div class="kpi-card cancellations">
-          <div class="kpi-info">
-            <h3>Cancellations</h3>
-            <p class="kpi-value" id="kpi-cancellations-count">0</p>
-          </div>
-          <div class="kpi-icon-box">
-            <i data-lucide="calendar-x" style="width: 24px; height: 24px;"></i>
-          </div>
-        </div>
-
-        <div class="kpi-card net">
-          <div class="kpi-info">
-            <h3>Net Booking Delta</h3>
-            <p class="kpi-value" id="kpi-net-count">0</p>
-          </div>
-          <div class="kpi-icon-box">
-            <i data-lucide="trending-up" id="net-trend-icon" style="width: 24px; height: 24px;"></i>
-          </div>
-        </div>
-      </section>
-
-      <!-- Main Visualizations & Feed -->
-      <section class="main-grid">
-        <!-- Chart Panel -->
-        <div class="panel-card">
-          <div class="panel-header">
-            <h2 class="panel-title">
-              <i data-lucide="bar-chart-3" style="width: 18px; height: 18px;"></i>
-              Booking Activity by Day of the Week
-            </h2>
-            <span style="font-size: 0.72rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;"> Creations (Mon - Sun)</span>
-          </div>
-          <div class="chart-wrapper">
-            <canvas id="bookingChart"></canvas>
-          </div>
-        </div>
-
-        <!-- Activity Feed Panel -->
-        <div class="panel-card">
-          <div class="panel-header">
-            <h2 class="panel-title">
-              <i data-lucide="clock" style="width: 18px; height: 18px;"></i>
-              Recent Event Activity Feed
-            </h2>
-            <span style="font-size: 0.72rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">Latest Logs</span>
-          </div>
-          <div class="activity-feed-container">
-            <div class="activity-feed" id="activity-feed-list">
-              <!-- Dynamically populated activity cards -->
+        <!-- KPI Metrics -->
+        <section class="kpi-grid">
+          <div class="kpi-card bookings">
+            <div class="kpi-info">
+              <h3>Bookings Created</h3>
+              <p class="kpi-value" id="kpi-bookings-count">0</p>
+            </div>
+            <div class="kpi-icon-box">
+              <i data-lucide="calendar-plus" style="width: 24px; height: 24px;"></i>
             </div>
           </div>
-        </div>
-      </section>
+
+          <div class="kpi-card cancellations">
+            <div class="kpi-info">
+              <h3>Cancellations</h3>
+              <p class="kpi-value" id="kpi-cancellations-count">0</p>
+            </div>
+            <div class="kpi-icon-box">
+              <i data-lucide="calendar-x" style="width: 24px; height: 24px;"></i>
+            </div>
+          </div>
+
+          <div class="kpi-card net">
+            <div class="kpi-info">
+              <h3>Net Booking Delta</h3>
+              <p class="kpi-value" id="kpi-net-count">0</p>
+            </div>
+            <div class="kpi-icon-box">
+              <i data-lucide="trending-up" id="net-trend-icon" style="width: 24px; height: 24px;"></i>
+            </div>
+          </div>
+        </section>
+
+        <!-- Main Visualizations & Feed -->
+        <section class="main-grid">
+          <!-- Chart Panel -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <h2 class="panel-title">
+                <i data-lucide="bar-chart-3" style="width: 18px; height: 18px;"></i>
+                Booking Activity by Day of the Week
+              </h2>
+              <span style="font-size: 0.72rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;"> Creations (Mon - Sun)</span>
+            </div>
+            <div class="chart-wrapper">
+              <canvas id="bookingChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Activity Feed Panel -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <h2 class="panel-title">
+                <i data-lucide="clock" style="width: 18px; height: 18px;"></i>
+                Recent Event Activity Feed
+              </h2>
+              <span style="font-size: 0.72rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">Latest Logs</span>
+            </div>
+            <div class="activity-feed-container">
+              <div class="activity-feed" id="activity-feed-list">
+                <!-- Dynamically populated activity cards -->
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Tab 2: Weekly Trends (All-Time History) -->
+      <div id="weekly-trends-tab-content" class="hidden" style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <!-- History Selector & Refresh -->
+        <section class="controls-bar">
+          <div class="week-display">
+            <i data-lucide="calendar" style="width: 18px; height: 18px;"></i>
+            <span style="margin-right: 0.5rem;">Select Past Week:</span>
+            <select id="history-week-select" style="width: auto; padding: 0.35rem 1.8rem 0.35rem 0.75rem; border-radius: 8px; border: 1px solid var(--card-border); font-family: var(--font-title); font-weight: bold; cursor: pointer; background-color: white; color: var(--color-bamboo); outline: none;"></select>
+          </div>
+          <div class="controls-actions">
+            <span class="last-updated" id="history-last-updated-text">Not updated yet</span>
+          </div>
+        </section>
+
+        <!-- KPI Metrics for Selected History Week -->
+        <section class="kpi-grid">
+          <div class="kpi-card bookings">
+            <div class="kpi-info">
+              <h3>Net Bookings</h3>
+              <p class="kpi-value" id="kpi-hist-bookings">0</p>
+            </div>
+            <div class="kpi-icon-box">
+              <i data-lucide="calendar-check" style="width: 24px; height: 24px;"></i>
+            </div>
+          </div>
+
+          <div class="kpi-card cancellations">
+            <div class="kpi-info">
+              <h3>Unique Members</h3>
+              <p class="kpi-value" id="kpi-hist-members">0</p>
+            </div>
+            <div class="kpi-icon-box">
+              <i data-lucide="users" style="width: 24px; height: 24px;"></i>
+            </div>
+          </div>
+
+          <div class="kpi-card net">
+            <div class="kpi-info" style="width: 100%;">
+              <h3>Club Set Saturation</h3>
+              <p class="kpi-value" id="kpi-hist-sets">0 / 12</p>
+              <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="kpi-hist-sets-progress" style="width: 0%;"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Charts for Selected Week & WOW trends -->
+        <section class="main-grid">
+          <!-- Daily Breakdown of Selected Week -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <h2 class="panel-title">
+                <i data-lucide="bar-chart-3" style="width: 18px; height: 18px;"></i>
+                Booking Activity of Selected Week
+              </h2>
+            </div>
+            <div class="chart-wrapper">
+              <canvas id="bookingHistoryChart"></canvas>
+            </div>
+          </div>
+
+          <!-- All-Time Weekly Bookings WOW Trend -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <h2 class="panel-title">
+                <i data-lucide="line-chart" style="width: 18px; height: 18px;"></i>
+                Week-Over-Week Booking Trend (All-Time)
+              </h2>
+            </div>
+            <div class="chart-wrapper">
+              <canvas id="wowTrendChart"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- All-Time Weekly Unique Players WOW Trend -->
+        <section class="main-grid" style="grid-template-columns: 1fr;">
+          <div class="panel-card">
+            <div class="panel-header">
+              <h2 class="panel-title">
+                <i data-lucide="trending-up" style="width: 18px; height: 18px;"></i>
+                Week-Over-Week Unique Members Trend (All-Time)
+              </h2>
+            </div>
+            <div class="chart-wrapper" style="height: 250px;">
+              <canvas id="wowPlayersChart"></canvas>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   </div>
 
   <script>
     // --- SUPABASE CONFIGURATION VARIABLES ---
-    const SUPABASE_URL = "YOUR_SUPABASE_URL";
-    const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+    let SUPABASE_URL = "YOUR_SUPABASE_URL";
+    let SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
     // --- STATE MANAGEMENT ---
     let state = {
@@ -776,10 +936,30 @@
       dailyCreations: [0, 0, 0, 0, 0, 0, 0], // Monday to Sunday
       recentEvents: [],
       mondayDate: null,
-      sundayDate: null
+      sundayDate: null,
+      historyData: [] // All-time weekly summary data
     };
 
     let bookingChart = null;
+    let histDailyChartObj = null;
+    let wowTrendChartObj = null;
+    let wowPlayersChartObj = null;
+
+    // --- SECURE DYNAMIC CONFIG LOADER ---
+    async function loadSupabaseConfig() {
+      try {
+        const response = await fetch("/api/config");
+        if (response.ok) {
+          const config = await response.json();
+          if (config.supabaseUrl && config.supabaseAnonKey) {
+            SUPABASE_URL = config.supabaseUrl;
+            SUPABASE_ANON_KEY = config.supabaseAnonKey;
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to load dynamic Supabase config, using defaults:", err);
+      }
+    }
 
     // --- CHECK CONFIGURATION VALIDITY ---
     function checkConfigured() {
@@ -955,6 +1135,29 @@
       }
     }
 
+    async function fetchHistoryData() {
+      if (!checkConfigured()) return;
+      try {
+        const queryUrl = `${SUPABASE_URL}/rest/v1/weekly_stats_history?order=week_start_date.asc`;
+        const response = await fetch(queryUrl, {
+          method: "GET",
+          headers: {
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+            "x-is-dashboard": "true",
+            "Content-Type": "application/json"
+          }
+        });
+        if (response.ok) {
+          state.historyData = await response.json();
+          populateHistorySelect();
+          renderHistoryCharts();
+        }
+      } catch (err) {
+        console.warn("Failed to fetch historical stats:", err);
+      }
+    }
+
     // --- UI RENDERING & COMPONENT UPDATE ---
     function updateUI() {
       // Date Range Text
@@ -1026,7 +1229,64 @@
       lucide.createIcons();
     }
 
-    // --- CHART.JS AGGREGATION RENDER ---
+    function populateHistorySelect() {
+      const select = document.getElementById("history-week-select");
+      select.innerHTML = "";
+      if (state.historyData.length === 0) {
+        const opt = document.createElement("option");
+        opt.innerText = "No history data available";
+        select.appendChild(opt);
+        return;
+      }
+
+      // Add options from latest week to oldest
+      for (let i = state.historyData.length - 1; i >= 0; i--) {
+        const item = state.historyData[i];
+        const opt = document.createElement("option");
+        opt.value = item.week_start_date;
+        
+        const parts = item.week_start_date.split('-');
+        const dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        const label = `Week of ${monthNames[dateObj.getMonth()]} ${dateObj.getDate()}, ${dateObj.getFullYear()}`;
+        
+        opt.innerText = label;
+        select.appendChild(opt);
+      }
+
+      select.value = state.historyData[state.historyData.length - 1].week_start_date;
+      updateHistoryKPIs();
+    }
+
+    function updateHistoryKPIs() {
+      const select = document.getElementById("history-week-select");
+      const selectedWeek = select.value;
+      const data = state.historyData.find(item => item.week_start_date === selectedWeek);
+      
+      if (!data) return;
+
+      document.getElementById("kpi-hist-bookings").innerText = data.total_bookings;
+      document.getElementById("kpi-hist-members").innerText = data.unique_players;
+      
+      const setsCount = data.slots_with_sets_full || 0;
+      const totalSlots = data.total_slots_run || 12;
+      const saturationPercent = Math.round((setsCount / totalSlots) * 100);
+      document.getElementById("kpi-hist-sets").innerText = `${setsCount} / ${totalSlots} (${saturationPercent}%)`;
+      
+      const progressFill = document.getElementById("kpi-hist-sets-progress");
+      progressFill.style.width = `${saturationPercent}%`;
+      if (saturationPercent >= 50) {
+        progressFill.classList.add("danger");
+      } else {
+        progressFill.classList.remove("danger");
+      }
+
+      renderHistoryDailyChart(data.bookings_by_day);
+      
+      const now = new Date();
+      document.getElementById("history-last-updated-text").innerText = `Last updated: ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
+    // --- CHART.JS AGGREGATION RENDERS ---
     function renderChart(chartData) {
       const ctx = document.getElementById('bookingChart').getContext('2d');
       
@@ -1041,8 +1301,8 @@
           datasets: [{
             label: 'Bookings Created',
             data: chartData,
-            backgroundColor: '#1b4332', // Deep forest green
-            hoverBackgroundColor: '#d4af37', // Gold highlight
+            backgroundColor: '#1b4332',
+            hoverBackgroundColor: '#d4af37',
             borderRadius: 6,
             borderSkipped: false,
           }]
@@ -1051,73 +1311,213 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: {
-              display: false
-            },
+            legend: { display: false },
             tooltip: {
               backgroundColor: '#2c3531',
               titleColor: '#f4f1de',
-              titleFont: {
-                family: 'Outfit',
-                weight: 'bold',
-                size: 13
-              },
+              titleFont: { family: 'Outfit', weight: 'bold', size: 13 },
               bodyColor: '#ffffff',
-              bodyFont: {
-                family: 'Inter',
-                size: 12
-              },
+              bodyFont: { family: 'Inter', size: 12 },
               padding: 10,
               cornerRadius: 8,
               displayColors: false
             }
           },
           scales: {
-            x: {
-              grid: {
-                display: false
-              },
-              ticks: {
-                color: '#2c3531',
-                font: {
-                  family: 'Outfit',
-                  weight: 'bold'
-                }
-              }
-            },
-            y: {
-              grid: {
-                color: 'rgba(27, 67, 50, 0.05)'
-              },
-              ticks: {
-                color: '#6b7770',
-                font: {
-                  family: 'Inter'
-                },
-                stepSize: 1,
-                precision: 0
-              },
-              min: 0
-            }
+            x: { grid: { display: false }, ticks: { color: '#2c3531', font: { family: 'Outfit', weight: 'bold' } } },
+            y: { grid: { color: 'rgba(27, 67, 50, 0.05)' }, ticks: { color: '#6b7770', font: { family: 'Inter' }, stepSize: 1, precision: 0 }, min: 0 }
           }
         }
       });
     }
 
+    function renderHistoryDailyChart(dailyData) {
+      const ctx = document.getElementById('bookingHistoryChart').getContext('2d');
+      if (histDailyChartObj) {
+        histDailyChartObj.destroy();
+      }
+
+      const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const dataValues = [
+        dailyData.Monday || dailyData.Mon || 0,
+        dailyData.Tuesday || dailyData.Tue || 0,
+        dailyData.Wednesday || dailyData.Wed || 0,
+        dailyData.Thursday || dailyData.Thu || 0,
+        dailyData.Friday || dailyData.Fri || 0,
+        dailyData.Saturday || dailyData.Sat || 0
+      ];
+
+      histDailyChartObj = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Active Bookings',
+            data: dataValues,
+            backgroundColor: '#1b4332',
+            hoverBackgroundColor: '#d4af37',
+            borderRadius: 6,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#2c3531', font: { family: 'Outfit', weight: 'bold' } } },
+            y: { grid: { color: 'rgba(27, 67, 50, 0.05)' }, ticks: { stepSize: 1, precision: 0 }, min: 0 }
+          }
+        }
+      });
+    }
+
+    function renderHistoryCharts() {
+      // 1. WoW booking Trend Chart
+      const wowCtx = document.getElementById('wowTrendChart').getContext('2d');
+      if (wowTrendChartObj) {
+        wowTrendChartObj.destroy();
+      }
+
+      const labels = state.historyData.map(item => {
+        const parts = item.week_start_date.split('-');
+        const dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        return `${monthNames[dateObj.getMonth()]} ${dateObj.getDate()}`;
+      });
+
+      const bookingTrendData = state.historyData.map(item => item.total_bookings);
+
+      wowTrendChartObj = new Chart(wowCtx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Total Bookings',
+            data: bookingTrendData,
+            borderColor: '#1b4332',
+            backgroundColor: 'rgba(27, 67, 50, 0.04)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.3,
+            pointBackgroundColor: '#d4af37',
+            pointRadius: 4,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: { grid: { color: 'rgba(0,0,0,0.02)' }, ticks: { font: { family: 'Outfit', weight: 'bold' } } },
+            y: { grid: { color: 'rgba(27, 67, 50, 0.05)' }, min: 0 }
+          }
+        }
+      });
+
+      // 2. WoW Unique Players Chart
+      const playersCtx = document.getElementById('wowPlayersChart').getContext('2d');
+      if (wowPlayersChartObj) {
+        wowPlayersChartObj.destroy();
+      }
+
+      const playerTrendData = state.historyData.map(item => item.unique_players);
+
+      wowPlayersChartObj = new Chart(playersCtx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Unique Members',
+            data: playerTrendData,
+            borderColor: '#b3863b',
+            backgroundColor: 'rgba(179, 134, 59, 0.04)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.3,
+            pointBackgroundColor: '#1b4332',
+            pointRadius: 4,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: { grid: { color: 'rgba(0,0,0,0.02)' }, ticks: { font: { family: 'Outfit', weight: 'bold' } } },
+            y: { grid: { color: 'rgba(27, 67, 50, 0.05)' }, min: 0 }
+          }
+        }
+      });
+    }
+
+    // --- TAB TABS SWITCH HANDLER ---
+    function initTabs() {
+      const tabs = document.querySelectorAll(".tab-btn");
+      tabs.forEach(tab => {
+        tab.addEventListener("click", (e) => {
+          const btn = e.target.closest(".tab-btn");
+          if (!btn) return;
+          
+          tabs.forEach(t => t.classList.remove("active"));
+          btn.classList.add("active");
+          
+          const tabName = btn.getAttribute("data-tab");
+          if (tabName === "weekly-stats") {
+            document.getElementById("weekly-stats-tab-content").classList.remove("hidden");
+            document.getElementById("weekly-trends-tab-content").classList.add("hidden");
+          } else {
+            document.getElementById("weekly-stats-tab-content").classList.add("hidden");
+            document.getElementById("weekly-trends-tab-content").classList.remove("hidden");
+            
+            // Resize and update charts to fix rendering inside unhidden containers
+            setTimeout(() => {
+              if (wowTrendChartObj) {
+                wowTrendChartObj.resize();
+                wowTrendChartObj.update();
+              }
+              if (wowPlayersChartObj) {
+                wowPlayersChartObj.resize();
+                wowPlayersChartObj.update();
+              }
+              if (histDailyChartObj) {
+                histDailyChartObj.resize();
+                histDailyChartObj.update();
+              }
+            }, 50);
+          }
+        });
+      });
+    }
+
     // --- INITIALIZE PAGE ---
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("DOMContentLoaded", async () => {
       computeCurrentWeekMonday();
       
       // Wire up event listeners
       document.getElementById("btn-refresh").addEventListener("click", fetchUsageEvents);
       document.getElementById("btn-retry").addEventListener("click", fetchUsageEvents);
+      document.getElementById("history-week-select").addEventListener("change", updateHistoryKPIs);
+
+      // Wire up tab buttons
+      initTabs();
+
+      // Load config dynamically from serverless config API
+      await loadSupabaseConfig();
 
       // Start initial load
       if (!checkConfigured()) {
         showSection("setup-view");
         lucide.createIcons();
       } else {
+        // Show tab bar
+        document.getElementById("tabs-navigation").classList.remove("hidden");
         fetchUsageEvents();
+        fetchHistoryData();
       }
     });
   </script>
