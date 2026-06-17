@@ -920,17 +920,19 @@ async function handleNewBooking() {
     updateView();
     const events = newGroupBookings.map(b => ({
       event_type: "booking_created",
-      id: b.id,
-      date: b.date,
-      day: b.day,
-      slot: b.slot,
-      table: b.table,
-      seat: b.seat,
-      name: b.name,
-      timeStart: b.timeStart,
-      needSet: b.needSet,
-      gameType: b.gameType,
-      groupId: b.groupId
+      metadata: {
+        id: b.id,
+        date: b.date,
+        day: b.day,
+        slot: b.slot,
+        table: b.table,
+        seat: b.seat,
+        name: b.name,
+        timeStart: b.timeStart,
+        needSet: b.needSet,
+        gameType: b.gameType,
+        groupId: b.groupId
+      }
     }));
     logUsageEvents(events);
     if (guestCount > 0) {
@@ -1002,17 +1004,19 @@ async function handleCancelBooking() {
       updateView();
       const events = groupBookings.map(b => ({
         event_type: "booking_cancelled",
-        id: b.id,
-        date: b.date,
-        day: b.day,
-        slot: b.slot,
-        table: b.table,
-        seat: b.seat,
-        name: b.name,
-        timeStart: b.timeStart,
-        needSet: b.needSet,
-        gameType: b.gameType,
-        groupId: b.groupId
+        metadata: {
+          id: b.id,
+          date: b.date,
+          day: b.day,
+          slot: b.slot,
+          table: b.table,
+          seat: b.seat,
+          name: b.name,
+          timeStart: b.timeStart,
+          needSet: b.needSet,
+          gameType: b.gameType,
+          groupId: b.groupId
+        }
       }));
       logUsageEvents(events);
       if (groupBookings.length > 1) {
