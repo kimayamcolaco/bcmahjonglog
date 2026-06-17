@@ -13,7 +13,6 @@ module.exports = async (req, res) => {
 
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
-  const resendApiKey = process.env.RESEND_API_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
     return res.status(500).json({ error: "Supabase environment variables are missing." });
@@ -144,7 +143,8 @@ module.exports = async (req, res) => {
       });
     });
 
-    // 3. Compile report data
+    // 3. Write summary stats back to Supabase (Upsert)
+    const historyUrl = `${supabaseUrl}/rest/v1/weekly_stats_history`;
     const reportData = {
       week_start_date: prevMondayStr,
       total_bookings: totalBookings,
@@ -155,91 +155,25 @@ module.exports = async (req, res) => {
       bookings_by_day: dailyBookings
     };
 
-    // 4. Send email report to kimayamcolaco@gmail.com via Resend API
-    let emailSent = false;
-    let emailError = null;
+    const upsertRes = await fetch(historyUrl, {
+      method: "POST",
+      headers: {
+        "apikey": supabaseKey,
+        "Authorization": `Bearer ${supabaseKey}`,
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates"
+      },
+      body: JSON.stringify(reportData)
+    });
 
-    if (resendApiKey) {
-      const setSaturationPercent = Math.round((slotsWithSetsFull / 12) * 100);
-      
-      let dailyBreakdownHtml = "";
-      dayNames.forEach(d => {
-        dailyBreakdownHtml += `
-          <tr>
-            <td style="padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;">${d}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">${dailyBookings[d]} bookings</td>
-          </tr>
-        `;
-      });
-
-      const emailHtml = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #0c4a30; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-          <div style="background-color: #0c4a30; padding: 20px; text-align: center; color: white;">
-            <h1 style="margin: 0; font-size: 22px; letter-spacing: 0.5px;">🀄 Bangalore Club Mahjong Log</h1>
-            <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.85;">Weekly Summary Report</p>
-          </div>
-          <div style="padding: 24px; background-color: #faf9f5; color: #2c3531;">
-            <h2 style="margin-top: 0; font-size: 16px; color: #b3863b; border-bottom: 1px solid #e5e5e5; padding-bottom: 8px;">Week of ${weekLabel}</h2>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0;">
-              <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid rgba(12,74,48,0.1); text-align: center;">
-                <span style="font-size: 12px; color: #6b7770; font-weight: bold; text-transform: uppercase;">Total Active Bookings</span>
-                <div style="font-size: 28px; font-weight: bold; color: #0c4a30; margin-top: 5px;">${totalBookings}</div>
-              </div>
-              <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid rgba(12,74,48,0.1); text-align: center;">
-                <span style="font-size: 12px; color: #6b7770; font-weight: bold; text-transform: uppercase;">Unique Members</span>
-                <div style="font-size: 28px; font-weight: bold; color: #b3863b; margin-top: 5px;">${uniquePlayers}</div>
-              </div>
-            </div>
-
-            <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid rgba(12,74,48,0.1); margin-bottom: 20px; text-align: center;">
-              <span style="font-size: 12px; color: #6b7770; font-weight: bold; text-transform: uppercase;">Club Set Saturation</span>
-              <div style="font-size: 20px; font-weight: bold; color: #0c4a30; margin-top: 5px;">${slotsWithSetsFull} / 12 Sessions (${setSaturationPercent}%)</div>
-              <p style="margin: 4px 0 0 0; font-size: 11px; color: #6b7770;">Number of sessions where all 4 club sets were fully occupied.</p>
-            </div>
-
-            <h3 style="font-size: 14px; margin-bottom: 8px; color: #0c4a30;">Daily Booking Distribution</h3>
-            <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 6px; overflow: hidden; border: 1px solid rgba(12,74,48,0.1);">
-              <tbody>
-                ${dailyBreakdownHtml}
-              </tbody>
-            </table>
-
-            <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #e5e5e5; text-align: center; font-size: 12px; color: #6b7770;">
-              This report was generated automatically. View full trends at <a href="https://bcmahjonglog.vercel.app/dashboard" style="color: #0c4a30; font-weight: bold; text-decoration: none;">Admins Dashboard</a>.
-            </div>
-          </div>
-        </div>
-      `;
-
-      const resendRes = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${resendApiKey}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          from: "Bangalore Club Mahjong <onboarding@resend.dev>",
-          to: "kimayamcolaco@gmail.com",
-          subject: `Bangalore Club Mahjong Log - Weekly Report (${prevMondayStr})`,
-          html: emailHtml
-        })
-      });
-
-      if (resendRes.ok) {
-        emailSent = true;
-      } else {
-        const errJson = await resendRes.json();
-        emailError = errJson.message || resendRes.statusText;
-      }
+    if (!upsertRes.ok) {
+      throw new Error(`Failed to save weekly stats: ${upsertRes.statusText}`);
     }
 
     return res.status(200).json({
       success: true,
-      message: `Weekly report generated for week ${prevMondayStr} to ${prevSaturdayStr}.`,
-      data: reportData,
-      emailSent,
-      emailError
+      message: `Weekly statistics written to database for week ${prevMondayStr} to ${prevSaturdayStr}.`,
+      data: reportData
     });
 
   } catch (error) {
