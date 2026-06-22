@@ -927,6 +927,21 @@
     let SUPABASE_URL = "YOUR_SUPABASE_URL";
     let SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
 
+    function sanitizeSupabaseUrl(url) {
+      if (!url) return "";
+      let clean = url.trim();
+      while (clean.endsWith("/")) {
+        clean = clean.slice(0, -1);
+      }
+      if (clean.endsWith("/rest/v1")) {
+        clean = clean.slice(0, -8);
+      }
+      while (clean.endsWith("/")) {
+        clean = clean.slice(0, -1);
+      }
+      return clean;
+    }
+
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
     // --- STATE MANAGEMENT ---
@@ -952,13 +967,14 @@
         if (response.ok) {
           const config = await response.json();
           if (config.supabaseUrl && config.supabaseAnonKey) {
-            SUPABASE_URL = config.supabaseUrl;
-            SUPABASE_ANON_KEY = config.supabaseAnonKey;
+            SUPABASE_URL = sanitizeSupabaseUrl(config.supabaseUrl);
+            SUPABASE_ANON_KEY = config.supabaseAnonKey.trim();
           }
         }
       } catch (err) {
         console.warn("Failed to load dynamic Supabase config, using defaults:", err);
       }
+      SUPABASE_URL = sanitizeSupabaseUrl(SUPABASE_URL);
     }
 
     // --- CHECK CONFIGURATION VALIDITY ---

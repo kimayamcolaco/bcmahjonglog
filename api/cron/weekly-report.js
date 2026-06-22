@@ -1,5 +1,20 @@
 const crypto = require('crypto');
 
+function sanitizeSupabaseUrl(url) {
+  if (!url) return "";
+  let clean = url.trim();
+  while (clean.endsWith("/")) {
+    clean = clean.slice(0, -1);
+  }
+  if (clean.endsWith("/rest/v1")) {
+    clean = clean.slice(0, -8);
+  }
+  while (clean.endsWith("/")) {
+    clean = clean.slice(0, -1);
+  }
+  return clean;
+}
+
 module.exports = async (req, res) => {
   // Simple auth check to ensure only Vercel Crons or authorized admins trigger this
   const authHeader = req.headers['authorization'];
@@ -11,8 +26,8 @@ module.exports = async (req, res) => {
     return res.status(401).json({ error: "Unauthorized access." });
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+  const supabaseUrl = sanitizeSupabaseUrl(process.env.SUPABASE_URL);
+  const supabaseKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || "").trim();
 
   if (!supabaseUrl || !supabaseKey) {
     return res.status(500).json({ error: "Supabase environment variables are missing." });
