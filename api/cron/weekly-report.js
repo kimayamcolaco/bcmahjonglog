@@ -68,7 +68,7 @@ module.exports = async (req, res) => {
 
     // 1. Fetch usage events for that week from Supabase
     // Note: We fetch all events for bookings scheduled in that date range
-    const queryUrl = `${supabaseUrl}/rest/v1/usage_events?date=gte.${prevMondayStr}&date=lte.${prevSaturdayStr}&order=created_at.asc`;
+    const queryUrl = `${supabaseUrl}/rest/v1/usage_events?metadata->>date=gte.${prevMondayStr}&metadata->>date=lte.${prevSaturdayStr}&order=created_at.asc`;
     
     const eventsRes = await fetch(queryUrl, {
       method: "GET",

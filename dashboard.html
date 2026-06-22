@@ -1027,26 +1027,36 @@
         ':' + pad(tzOffset % 60);
     }
 
+    function formatDateString(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
     // --- DATA UTILITIES & AGGREGATION ---
     function processEvents(events) {
       let bookings = 0;
       let cancellations = 0;
-      const creationsByDay = [0, 0, 0, 0, 0, 0, 0]; // Mon-Sun
+      const activeBookings = new Map();
       const activityLogs = [];
 
-      events.forEach(event => {
-        const type = (event.event_type || event.action || event.event || "").toLowerCase();
-        
-        // Define if it is booking creation or cancellation event
+      // Sort events chronologically to replay state updates correctly
+      const sortedEvents = [...events].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+      sortedEvents.forEach(event => {
+        const type = (event.event_type || "").toLowerCase();
         const isBooking = type.includes("book") || type.includes("create") || type.includes("insert") || type.includes("add") || type === "booking";
         const isCancellation = type.includes("cancel") || type.includes("delete") || type.includes("remove") || type === "cancellation";
 
-        // Parse payload variables safely
-        const payload = event.metadata || event.payload || event.details || event;
-        const name = event.name || payload.name || payload.playerName || payload.player_name || "Club Member";
-        const table = event.table || payload.table || payload.tableId || payload.table_id || "";
-        const slot = event.slot || payload.slot || "";
-        
+        const payload = event.metadata || {};
+        const bookingId = payload.id || event.id;
+        const name = payload.name || event.name || "Club Member";
+        const table = payload.table || event.table || "";
+        const slot = payload.slot || event.slot || "";
+        const scheduledDay = payload.day || event.day || "";
+        const scheduledDate = payload.date || event.date || "";
+
         let displayType = "";
         let desc = "";
 
@@ -1058,13 +1068,10 @@
           if (slot) desc += ` (${slot})`;
           else desc += ` seat`;
 
-          // Track creation day
-          const date = new Date(event.created_at);
-          if (!isNaN(date.getTime())) {
-            const dayOfWeek = date.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
-            const mappedIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Map to Mon=0...Sun=6
-            creationsByDay[mappedIndex]++;
-          }
+          activeBookings.set(bookingId, {
+            day: scheduledDay,
+            date: scheduledDate
+          });
         } else if (isCancellation) {
           cancellations++;
           displayType = "cancellation";
@@ -1072,8 +1079,9 @@
           if (table) desc += ` cancelled Table ${table}`;
           if (slot) desc += ` (${slot})`;
           else desc += ` reservation`;
+
+          activeBookings.delete(bookingId);
         } else {
-          // Fallback event types
           displayType = "booking";
           desc = `${name} updated scheduling record`;
         }
@@ -1086,10 +1094,29 @@
         });
       });
 
+      // Count active bookings by scheduled day of the week
+      const dailyActive = [0, 0, 0, 0, 0, 0, 0]; // Mon-Sun
+      const dayIndexMap = {
+        "Monday": 0, "Mon": 0,
+        "Tuesday": 1, "Tue": 1,
+        "Wednesday": 2, "Wed": 2,
+        "Thursday": 3, "Thu": 3,
+        "Friday": 4, "Fri": 4,
+        "Saturday": 5, "Sat": 5,
+        "Sunday": 6, "Sun": 6
+      };
+
+      activeBookings.forEach(b => {
+        if (b.day && dayIndexMap[b.day] !== undefined) {
+          dailyActive[dayIndexMap[b.day]]++;
+        }
+      });
+
       state.bookingsCount = bookings;
       state.cancellationsCount = cancellations;
-      state.dailyCreations = creationsByDay;
-      state.recentEvents = activityLogs.slice(0, 15); // keep latest 15 events
+      state.dailyCreations = dailyActive; // plotted on the bar chart
+      // Show latest activity feed first (descending)
+      state.recentEvents = activityLogs.reverse().slice(0, 15);
     }
 
     // --- SCREEN NAVIGATION / VIEW SWAP ---
@@ -1117,10 +1144,11 @@
       refreshBtn.disabled = true;
 
       try {
-        const localISO = getLocalISOString(state.mondayDate);
+        const mondayStr = formatDateString(state.mondayDate);
+        const sundayStr = formatDateString(state.sundayDate);
         
-        // Build GET request with week filter and descending order
-        const queryUrl = `${SUPABASE_URL}/rest/v1/usage_events?created_at=gte.${encodeURIComponent(localISO)}&order=created_at.desc`;
+        // Query events scheduled for this week (Monday to Sunday)
+        const queryUrl = `${SUPABASE_URL}/rest/v1/usage_events?metadata->>date=gte.${mondayStr}&metadata->>date=lte.${sundayStr}&order=created_at.asc`;
         
         const response = await fetch(queryUrl, {
           method: "GET",
