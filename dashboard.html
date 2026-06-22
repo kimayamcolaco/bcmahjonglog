@@ -321,6 +321,8 @@
     .kpi-card.bookings::after { background: var(--color-bamboo-light); }
     .kpi-card.cancellations::after { background: var(--color-gold); }
     .kpi-card.net::after { background: var(--color-text); }
+    .kpi-card.members::after { background: #b3863b; }
+    .kpi-card.sets::after { background: var(--color-gold); }
 
     .kpi-info h3 {
       font-size: 0.8rem;
@@ -362,6 +364,16 @@
     .kpi-card.net .kpi-icon-box {
       background: rgba(44, 53, 49, 0.06);
       color: var(--color-text);
+    }
+
+    .kpi-card.members .kpi-icon-box {
+      background: rgba(179, 134, 59, 0.08);
+      color: #b3863b;
+    }
+
+    .kpi-card.sets .kpi-icon-box {
+      background: rgba(212, 175, 55, 0.08);
+      color: var(--color-gold);
     }
 
     /* Main Content Grid */
@@ -792,6 +804,26 @@
               <i data-lucide="trending-up" id="net-trend-icon" style="width: 24px; height: 24px;"></i>
             </div>
           </div>
+
+          <div class="kpi-card members">
+            <div class="kpi-info">
+              <h3>Unique Members</h3>
+              <p class="kpi-value" id="kpi-unique-members-count">0</p>
+            </div>
+            <div class="kpi-icon-box">
+              <i data-lucide="users" style="width: 24px; height: 24px;"></i>
+            </div>
+          </div>
+
+          <div class="kpi-card sets">
+            <div class="kpi-info" style="width: 100%;">
+              <h3>Club Set Saturation</h3>
+              <p class="kpi-value" id="kpi-sets-count">0 / 12</p>
+              <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="kpi-sets-progress" style="width: 0%;"></div>
+              </div>
+            </div>
+          </div>
         </section>
 
         <!-- Main Visualizations & Feed -->
@@ -952,6 +984,8 @@
       recentEvents: [],
       mondayDate: null,
       sundayDate: null,
+      uniqueMembersCount: 0,
+      slotsWithSetsFull: 0,
       historyData: [] // All-time weekly summary data
     };
 
@@ -1056,6 +1090,7 @@
         const slot = payload.slot || event.slot || "";
         const scheduledDay = payload.day || event.day || "";
         const scheduledDate = payload.date || event.date || "";
+        const needSet = payload.needSet === true || payload.needSet === 'true';
 
         let displayType = "";
         let desc = "";
@@ -1070,7 +1105,11 @@
 
           activeBookings.set(bookingId, {
             day: scheduledDay,
-            date: scheduledDate
+            date: scheduledDate,
+            name: name,
+            table: table,
+            slot: slot,
+            needSet: needSet
           });
         } else if (isCancellation) {
           cancellations++;
@@ -1111,6 +1150,44 @@
           dailyActive[dayIndexMap[b.day]]++;
         }
       });
+
+      // Compute unique players
+      const uniquePlayersSet = new Set();
+      activeBookings.forEach(b => {
+        if (b.name) {
+          const primaryName = b.name.split(" (+")[0].trim();
+          uniquePlayersSet.add(primaryName);
+        }
+      });
+      state.uniqueMembersCount = uniquePlayersSet.size;
+
+      // Compute Set Saturation (how many slots had all 4 club sets fully in use)
+      let slotsWithSetsFull = 0;
+      const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      const slots = ["Morning", "Afternoon"];
+
+      dayNames.forEach(day => {
+        slots.forEach(slot => {
+          const slotBookings = [];
+          activeBookings.forEach(b => {
+            if (b.day === day && b.slot === slot) {
+              slotBookings.push(b);
+            }
+          });
+          
+          const tablesRequestingSet = new Set();
+          slotBookings.forEach(b => {
+            if (b.needSet) {
+              tablesRequestingSet.add(b.table);
+            }
+          });
+
+          if (tablesRequestingSet.size >= 4) {
+            slotsWithSetsFull++;
+          }
+        });
+      });
+      state.slotsWithSetsFull = slotsWithSetsFull;
 
       state.bookingsCount = bookings;
       state.cancellationsCount = cancellations;
@@ -1228,6 +1305,22 @@
       } else {
         trendIcon.setAttribute("data-lucide", "minus");
         trendIcon.parentElement.style.color = "var(--color-text-muted)";
+      }
+
+      // Update new live KPIs
+      document.getElementById("kpi-unique-members-count").innerText = state.uniqueMembersCount;
+      
+      const setsCount = state.slotsWithSetsFull || 0;
+      const totalSlots = 12;
+      const saturationPercent = Math.round((setsCount / totalSlots) * 100);
+      document.getElementById("kpi-sets-count").innerText = `${setsCount} / ${totalSlots} (${saturationPercent}%)`;
+      
+      const progressFill = document.getElementById("kpi-sets-progress");
+      progressFill.style.width = `${saturationPercent}%`;
+      if (saturationPercent >= 50) {
+        progressFill.classList.add("danger");
+      } else {
+        progressFill.classList.remove("danger");
       }
 
       // Recent Activity Feed
@@ -1431,6 +1524,19 @@
       });
 
       const bookingTrendData = state.historyData.map(item => item.total_bookings);
+      const playerTrendData = state.historyData.map(item => item.unique_players);
+
+      // Append current week's live data to trends chart if available
+      if (state.mondayDate) {
+        const liveMondayStr = formatDateString(state.mondayDate);
+        const alreadyExists = state.historyData.some(item => item.week_start_date === liveMondayStr);
+        if (!alreadyExists) {
+          labels.push(`${monthNames[state.mondayDate.getMonth()]} ${state.mondayDate.getDate()} (Live)`);
+          const currentNetBookings = state.bookingsCount - state.cancellationsCount;
+          bookingTrendData.push(currentNetBookings >= 0 ? currentNetBookings : 0);
+          playerTrendData.push(state.uniqueMembersCount);
+        }
+      }
 
       wowTrendChartObj = new Chart(wowCtx, {
         type: 'line',
@@ -1466,8 +1572,6 @@
       if (wowPlayersChartObj) {
         wowPlayersChartObj.destroy();
       }
-
-      const playerTrendData = state.historyData.map(item => item.unique_players);
 
       wowPlayersChartObj = new Chart(playersCtx, {
         type: 'line',
