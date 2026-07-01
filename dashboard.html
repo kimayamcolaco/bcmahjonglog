@@ -812,6 +812,9 @@
           </h2>
           <span style="font-size: 0.72rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">All-Time Summaries</span>
         </div>
+        <div class="chart-wrapper" style="height: 200px; margin-bottom: 1.5rem;">
+          <canvas id="wowTrendChart"></canvas>
+        </div>
         <div style="overflow-x: auto;">
           <table class="wow-table">
             <thead>
@@ -957,6 +960,7 @@
     };
 
     let diveDailyChartObj = null;
+    let wowTrendChartObj = null;
 
     // --- SECURE DYNAMIC CONFIG LOADER ---
     async function loadSupabaseConfig() {
@@ -1210,6 +1214,7 @@
       state.weeksList.sort((a, b) => new Date(b.week_start_date) - new Date(a.week_start_date));
       updateWoWOverview();
       populateDeepDiveSelect();
+      renderWoWTrendChart();
     }
 
     // --- UI RENDERING & COMPONENT UPDATE ---
@@ -1274,6 +1279,59 @@
           datasets: [{ data: [dailyData.Monday || 0, dailyData.Tuesday || 0, dailyData.Wednesday || 0, dailyData.Thursday || 0, dailyData.Friday || 0, dailyData.Saturday || 0], backgroundColor: '#1b4332', borderRadius: 6 }]
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+      });
+    }
+
+    function renderWoWTrendChart() {
+      const ctx = document.getElementById('wowTrendChart').getContext('2d');
+      if (wowTrendChartObj) {
+        wowTrendChartObj.destroy();
+      }
+
+      const data = [...state.weeksList].reverse();
+      const labels = data.map(w => {
+        const parts = w.week_start_date.split('-');
+        const dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        return `${monthNames[dateObj.getMonth()]} ${dateObj.getDate()}`;
+      });
+
+      const bookings = data.map(w => w.total_bookings);
+
+      wowTrendChartObj = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Seats Booked',
+            data: bookings,
+            borderColor: '#1b4332',
+            backgroundColor: 'rgba(27, 67, 50, 0.04)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.3,
+            pointBackgroundColor: '#d4af37',
+            pointRadius: 4,
+            pointHoverRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: '#2c3531', font: { family: 'Outfit', weight: 'bold' } }
+            },
+            y: {
+              grid: { color: 'rgba(27, 67, 50, 0.05)' },
+              ticks: { stepSize: 50, color: '#6b7770', font: { family: 'Inter' } },
+              min: 0
+            }
+          }
+        }
       });
     }
 
