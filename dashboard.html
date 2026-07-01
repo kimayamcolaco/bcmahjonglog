@@ -1265,8 +1265,8 @@
       diveDailyChartObj = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-          datasets: [{ data: [dailyData.Monday || 0, dailyData.Tuesday || 0, dailyData.Wednesday || 0, dailyData.Thursday || 0, dailyData.Friday || 0, dailyData.Saturday || 0, dailyData.Sunday || 0], backgroundColor: '#1b4332', borderRadius: 6 }]
+          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+          datasets: [{ data: [dailyData.Monday || 0, dailyData.Tuesday || 0, dailyData.Wednesday || 0, dailyData.Thursday || 0, dailyData.Friday || 0, dailyData.Saturday || 0], backgroundColor: '#1b4332', borderRadius: 6 }]
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
       });
