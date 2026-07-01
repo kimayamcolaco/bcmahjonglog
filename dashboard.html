@@ -684,6 +684,58 @@
     .progress-bar-fill.danger {
       background-color: #c92a2a;
     }
+
+    /* WoW Table Styles */
+    .wow-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-title);
+      font-size: 0.9rem;
+      text-align: left;
+      margin-top: 0.5rem;
+    }
+    .wow-table th, .wow-table td {
+      padding: 0.9rem 1.2rem;
+      border-bottom: 1px solid rgba(27, 67, 50, 0.08);
+    }
+    .wow-table th {
+      color: var(--color-bamboo);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.78rem;
+      letter-spacing: 0.05em;
+    }
+    .wow-table tr {
+      transition: var(--transition-smooth);
+    }
+    .wow-table tr:hover {
+      background-color: rgba(27, 67, 50, 0.02);
+    }
+    .wow-table td {
+      color: var(--color-text);
+      font-weight: 500;
+    }
+    .wow-table td.week-cell {
+      font-weight: 700;
+      color: var(--color-bamboo);
+    }
+    .wow-table .badge-live {
+      background: rgba(45, 106, 79, 0.1);
+      color: var(--color-bamboo-light);
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      margin-left: 0.5rem;
+      letter-spacing: 0.05em;
+    }
+
+    @media (min-width: 992px) {
+      .main-grid.full-width {
+        grid-template-columns: 1fr !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -743,72 +795,74 @@
       </button>
     </div>
 
-    <!-- Tabs Navigation (Visible after configuration is verified) -->
-    <div class="tabs-nav hidden" id="tabs-navigation">
-      <button class="tab-btn active" data-tab="weekly-stats">
-        <i data-lucide="bar-chart-2" style="width: 14px; height: 14px;"></i> Weekly Stats (Live logs)
-      </button>
-      <button class="tab-btn" data-tab="weekly-trends">
-        <i data-lucide="line-chart" style="width: 14px; height: 14px;"></i> Weekly Trends (All-Time)
-      </button>
-    </div>
-
     <!-- DASHBOARD WORKSPACE -->
     <div id="dashboard-view" class="hidden" style="display: flex; flex-direction: column; gap: 1.5rem;">
       
-      <!-- Tab 1: Weekly Stats (Live Logs) -->
-      <div id="weekly-stats-tab-content" style="display: flex; flex-direction: column; gap: 1.5rem;">
-        <!-- Date Filter & Controls -->
-        <section class="controls-bar">
-          <div class="week-display">
-            <i data-lucide="calendar" style="width: 18px; height: 18px;"></i>
-            <span id="date-range-display">Loading week dates...</span>
-          </div>
-          <div class="controls-actions">
-            <span class="last-updated" id="last-updated-text">Not updated yet</span>
-            <button class="refresh-btn" id="btn-refresh">
-              <i data-lucide="refresh-cw" style="width: 15px; height: 15px;"></i>
-              Refresh Data
-            </button>
-          </div>
-        </section>
+      <!-- Section 1: Week-over-Week Overview -->
+      <section class="panel-card">
+        <div class="panel-header">
+          <h2 class="panel-title">
+            <i data-lucide="bar-chart-3" style="width: 18px; height: 18px;"></i>
+            Week-over-Week Overview
+          </h2>
+          <span style="font-size: 0.72rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">All-Time Summaries</span>
+        </div>
+        <div style="overflow-x: auto;">
+          <table class="wow-table">
+            <thead>
+              <tr>
+                <th>Week</th>
+                <th>Total Seats Booked</th>
+                <th>Cancellations</th>
+                <th>Club Set Saturation</th>
+              </tr>
+            </thead>
+            <tbody id="wow-table-body">
+              <!-- Dynamically populated from JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-        <!-- KPI Metrics -->
-        <section class="kpi-grid">
+      <!-- Section 2: Weekly Deep Dive -->
+      <section class="panel-card" style="gap: 1.5rem;">
+        <div class="panel-header">
+          <h2 class="panel-title">
+            <i data-lucide="search" style="width: 18px; height: 18px;"></i>
+            Weekly Deep Dive
+          </h2>
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span style="font-size: 0.85rem; font-weight: 600; color: var(--color-text-muted);">Select Week:</span>
+            <select id="deep-dive-week-select" style="padding: 0.35rem 1.8rem 0.35rem 0.75rem; border-radius: 8px; border: 1px solid var(--card-border); font-family: var(--font-title); font-weight: bold; cursor: pointer; background-color: white; color: var(--color-bamboo); outline: none;"></select>
+          </div>
+        </div>
+
+        <!-- Deep Dive KPIs -->
+        <div class="kpi-grid">
           <div class="kpi-card bookings">
             <div class="kpi-info">
-              <h3>Bookings Created</h3>
-              <p class="kpi-value" id="kpi-bookings-count">0</p>
+              <h3>Net Seats Booked</h3>
+              <p class="kpi-value" id="kpi-dive-bookings">0</p>
             </div>
             <div class="kpi-icon-box">
-              <i data-lucide="calendar-plus" style="width: 24px; height: 24px;"></i>
+              <i data-lucide="calendar-check" style="width: 24px; height: 24px;"></i>
             </div>
           </div>
 
           <div class="kpi-card cancellations">
             <div class="kpi-info">
               <h3>Cancellations</h3>
-              <p class="kpi-value" id="kpi-cancellations-count">0</p>
+              <p class="kpi-value" id="kpi-dive-cancellations">0</p>
             </div>
             <div class="kpi-icon-box">
               <i data-lucide="calendar-x" style="width: 24px; height: 24px;"></i>
             </div>
           </div>
 
-          <div class="kpi-card net">
-            <div class="kpi-info">
-              <h3>Net Booking Delta</h3>
-              <p class="kpi-value" id="kpi-net-count">0</p>
-            </div>
-            <div class="kpi-icon-box">
-              <i data-lucide="trending-up" id="net-trend-icon" style="width: 24px; height: 24px;"></i>
-            </div>
-          </div>
-
           <div class="kpi-card members">
             <div class="kpi-info">
               <h3>Unique Members</h3>
-              <p class="kpi-value" id="kpi-unique-members-count">0</p>
+              <p class="kpi-value" id="kpi-dive-members">0</p>
             </div>
             <div class="kpi-icon-box">
               <i data-lucide="users" style="width: 24px; height: 24px;"></i>
@@ -818,139 +872,46 @@
           <div class="kpi-card sets">
             <div class="kpi-info" style="width: 100%;">
               <h3>Club Set Saturation</h3>
-              <p class="kpi-value" id="kpi-sets-count">0 / 12</p>
+              <p class="kpi-value" id="kpi-dive-sets">0 / 48</p>
               <div class="progress-bar-container">
-                <div class="progress-bar-fill" id="kpi-sets-progress" style="width: 0%;"></div>
+                <div class="progress-bar-fill" id="kpi-dive-sets-progress" style="width: 0%;"></div>
               </div>
             </div>
           </div>
-        </section>
+        </div>
 
-        <!-- Main Visualizations & Feed -->
-        <section class="main-grid">
-          <!-- Chart Panel -->
-          <div class="panel-card">
-            <div class="panel-header">
-              <h2 class="panel-title">
-                <i data-lucide="bar-chart-3" style="width: 18px; height: 18px;"></i>
-                Booking Activity by Day of the Week
+        <!-- Charts & Activity -->
+        <div class="main-grid" id="dive-main-grid">
+          <!-- Daily breakdown of selected week -->
+          <div class="panel-card" style="border: none; padding: 0; box-shadow: none;">
+            <div class="panel-header" style="border-bottom: none; padding-bottom: 0.5rem;">
+              <h2 class="panel-title" style="font-size: 1rem;">
+                <i data-lucide="bar-chart-2" style="width: 16px; height: 16px;"></i>
+                Booking Breakdown by Day of the Week
               </h2>
-              <span style="font-size: 0.72rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;"> Creations (Mon - Sun)</span>
             </div>
-            <div class="chart-wrapper">
-              <canvas id="bookingChart"></canvas>
+            <div class="chart-wrapper" style="height: 300px;">
+              <canvas id="diveDailyChart"></canvas>
             </div>
           </div>
 
-          <!-- Activity Feed Panel -->
-          <div class="panel-card">
-            <div class="panel-header">
-              <h2 class="panel-title">
-                <i data-lucide="clock" style="width: 18px; height: 18px;"></i>
-                Recent Event Activity Feed
+          <!-- Activity Feed (only shown for current week) -->
+          <div class="panel-card" id="dive-activity-panel" style="border: none; padding: 0; box-shadow: none;">
+            <div class="panel-header" style="border-bottom: none; padding-bottom: 0.5rem;">
+              <h2 class="panel-title" style="font-size: 1rem;">
+                <i data-lucide="clock" style="width: 16px; height: 16px;"></i>
+                Recent Event Activity (Live)
               </h2>
-              <span style="font-size: 0.72rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">Latest Logs</span>
             </div>
-            <div class="activity-feed-container">
-              <div class="activity-feed" id="activity-feed-list">
-                <!-- Dynamically populated activity cards -->
+            <div class="activity-feed-container" style="height: 300px;">
+              <div class="activity-feed" id="dive-activity-feed-list">
+                <!-- Live logs feed -->
               </div>
             </div>
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
 
-      <!-- Tab 2: Weekly Trends (All-Time History) -->
-      <div id="weekly-trends-tab-content" class="hidden" style="display: flex; flex-direction: column; gap: 1.5rem;">
-        <!-- History Selector & Refresh -->
-        <section class="controls-bar">
-          <div class="week-display">
-            <i data-lucide="calendar" style="width: 18px; height: 18px;"></i>
-            <span style="margin-right: 0.5rem;">Select Past Week:</span>
-            <select id="history-week-select" style="width: auto; padding: 0.35rem 1.8rem 0.35rem 0.75rem; border-radius: 8px; border: 1px solid var(--card-border); font-family: var(--font-title); font-weight: bold; cursor: pointer; background-color: white; color: var(--color-bamboo); outline: none;"></select>
-          </div>
-          <div class="controls-actions">
-            <span class="last-updated" id="history-last-updated-text">Not updated yet</span>
-          </div>
-        </section>
-
-        <!-- KPI Metrics for Selected History Week -->
-        <section class="kpi-grid">
-          <div class="kpi-card bookings">
-            <div class="kpi-info">
-              <h3>Net Bookings</h3>
-              <p class="kpi-value" id="kpi-hist-bookings">0</p>
-            </div>
-            <div class="kpi-icon-box">
-              <i data-lucide="calendar-check" style="width: 24px; height: 24px;"></i>
-            </div>
-          </div>
-
-          <div class="kpi-card cancellations">
-            <div class="kpi-info">
-              <h3>Unique Members</h3>
-              <p class="kpi-value" id="kpi-hist-members">0</p>
-            </div>
-            <div class="kpi-icon-box">
-              <i data-lucide="users" style="width: 24px; height: 24px;"></i>
-            </div>
-          </div>
-
-          <div class="kpi-card net">
-            <div class="kpi-info" style="width: 100%;">
-              <h3>Club Set Saturation</h3>
-              <p class="kpi-value" id="kpi-hist-sets">0 / 12</p>
-              <div class="progress-bar-container">
-                <div class="progress-bar-fill" id="kpi-hist-sets-progress" style="width: 0%;"></div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- Charts for Selected Week & WOW trends -->
-        <section class="main-grid">
-          <!-- Daily Breakdown of Selected Week -->
-          <div class="panel-card">
-            <div class="panel-header">
-              <h2 class="panel-title">
-                <i data-lucide="bar-chart-3" style="width: 18px; height: 18px;"></i>
-                Booking Activity of Selected Week
-              </h2>
-            </div>
-            <div class="chart-wrapper">
-              <canvas id="bookingHistoryChart"></canvas>
-            </div>
-          </div>
-
-          <!-- All-Time Weekly Bookings WOW Trend -->
-          <div class="panel-card">
-            <div class="panel-header">
-              <h2 class="panel-title">
-                <i data-lucide="line-chart" style="width: 18px; height: 18px;"></i>
-                Week-Over-Week Booking Trend (All-Time)
-              </h2>
-            </div>
-            <div class="chart-wrapper">
-              <canvas id="wowTrendChart"></canvas>
-            </div>
-          </div>
-        </section>
-
-        <!-- All-Time Weekly Unique Players WOW Trend -->
-        <section class="main-grid" style="grid-template-columns: 1fr;">
-          <div class="panel-card">
-            <div class="panel-header">
-              <h2 class="panel-title">
-                <i data-lucide="trending-up" style="width: 18px; height: 18px;"></i>
-                Week-Over-Week Unique Members Trend (All-Time)
-              </h2>
-            </div>
-            <div class="chart-wrapper" style="height: 250px;">
-              <canvas id="wowPlayersChart"></canvas>
-            </div>
-          </div>
-        </section>
-      </div>
     </div>
   </div>
 
@@ -986,13 +947,11 @@
       sundayDate: null,
       uniqueMembersCount: 0,
       slotsWithSetsFull: 0,
-      historyData: [] // All-time weekly summary data
+      historyData: [], // All-time weekly summary data
+      weeksList: []    // Combined historical + live weeks list
     };
 
-    let bookingChart = null;
-    let histDailyChartObj = null;
-    let wowTrendChartObj = null;
-    let wowPlayersChartObj = null;
+    let diveDailyChartObj = null;
 
     // --- SECURE DYNAMIC CONFIG LOADER ---
     async function loadSupabaseConfig() {
@@ -1023,8 +982,6 @@
       const today = new Date();
       const currentDay = today.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
       
-      // Calculate diff to Monday of the current calendar week.
-      // Sunday is the final day of the week, so Monday is 6 days ago.
       let diffToMonday = 0;
       if (currentDay === 0) {
         diffToMonday = -6; 
@@ -1045,22 +1002,6 @@
       state.sundayDate = sunday;
     }
 
-    // Format Date with Local Timezone Offset (for Supabase postgrest compatibility)
-    function getLocalISOString(date) {
-      const tzOffset = -date.getTimezoneOffset();
-      const diff = tzOffset >= 0 ? '+' : '-';
-      const pad = num => String(Math.floor(Math.abs(num))).padStart(2, '0');
-      
-      return date.getFullYear() +
-        '-' + pad(date.getMonth() + 1) +
-        '-' + pad(date.getDate()) +
-        'T' + pad(date.getHours()) +
-        ':' + pad(date.getMinutes()) +
-        ':' + pad(date.getSeconds()) +
-        diff + pad(tzOffset / 60) +
-        ':' + pad(tzOffset % 60);
-    }
-
     function formatDateString(date) {
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -1075,7 +1016,6 @@
       const activeBookings = new Map();
       const activityLogs = [];
 
-      // Sort events chronologically to replay state updates correctly
       const sortedEvents = [...events].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
       sortedEvents.forEach(event => {
@@ -1120,9 +1060,6 @@
           else desc += ` reservation`;
 
           activeBookings.delete(bookingId);
-        } else {
-          displayType = "booking";
-          desc = `${name} updated scheduling record`;
         }
 
         activityLogs.push({
@@ -1133,16 +1070,9 @@
         });
       });
 
-      // Count active bookings by scheduled day of the week
-      const dailyActive = [0, 0, 0, 0, 0, 0, 0]; // Mon-Sun
+      const dailyActive = [0, 0, 0, 0, 0, 0, 0];
       const dayIndexMap = {
-        "Monday": 0, "Mon": 0,
-        "Tuesday": 1, "Tue": 1,
-        "Wednesday": 2, "Wed": 2,
-        "Thursday": 3, "Thu": 3,
-        "Friday": 4, "Fri": 4,
-        "Saturday": 5, "Sat": 5,
-        "Sunday": 6, "Sun": 6
+        "Monday": 0, "Mon": 0, "Tuesday": 1, "Tue": 1, "Wednesday": 2, "Wed": 2, "Thursday": 3, "Thu": 3, "Friday": 4, "Fri": 4, "Saturday": 5, "Sat": 5, "Sunday": 6, "Sun": 6
       };
 
       activeBookings.forEach(b => {
@@ -1151,48 +1081,32 @@
         }
       });
 
-      // Compute unique players
       const uniquePlayersSet = new Set();
-      activeBookings.forEach(b => {
-        if (b.name) {
-          const primaryName = b.name.split(" (+")[0].trim();
-          uniquePlayersSet.add(primaryName);
-        }
-      });
+      activeBookings.forEach(b => { if (b.name) uniquePlayersSet.add(b.name.split(" (+")[0].trim()); });
       state.uniqueMembersCount = uniquePlayersSet.size;
 
-      // Compute Set Saturation (how many slots had all 4 club sets fully in use)
       let slotsWithSetsFull = 0;
       const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
       const slots = ["Morning", "Afternoon"];
 
       dayNames.forEach(day => {
         slots.forEach(slot => {
-          const slotBookings = [];
-          activeBookings.forEach(b => {
-            if (b.day === day && b.slot === slot) {
-              slotBookings.push(b);
-            }
-          });
-          
           const tablesRequestingSet = new Set();
-          slotBookings.forEach(b => {
-            if (b.needSet) {
+          activeBookings.forEach(b => {
+            if (b.day === day && b.slot === slot && b.needSet) {
               tablesRequestingSet.add(b.table);
             }
           });
 
-          if (tablesRequestingSet.size >= 4) {
-            slotsWithSetsFull++;
-          }
+          const setsUsedInSlot = Math.min(4, tablesRequestingSet.size);
+          slotsWithSetsFull += setsUsedInSlot;
         });
       });
       state.slotsWithSetsFull = slotsWithSetsFull;
 
       state.bookingsCount = bookings;
       state.cancellationsCount = cancellations;
-      state.dailyCreations = dailyActive; // plotted on the bar chart
-      // Show latest activity feed first (descending)
+      state.dailyCreations = dailyActive;
       state.recentEvents = activityLogs.reverse().slice(0, 15);
     }
 
@@ -1202,29 +1116,18 @@
       document.getElementById("loading-view").classList.add("hidden");
       document.getElementById("error-view").classList.add("hidden");
       document.getElementById("dashboard-view").classList.add("hidden");
-
       document.getElementById(viewId).classList.remove("hidden");
     }
 
     // --- DATA FETCHING ---
     async function fetchUsageEvents() {
-      if (!checkConfigured()) {
-        showSection("setup-view");
-        return;
-      }
-
+      if (!checkConfigured()) { showSection("setup-view"); return; }
       showSection("loading-view");
       document.getElementById("loading-status-text").innerText = "Querying Supabase API...";
-      
-      const refreshBtn = document.getElementById("btn-refresh");
-      refreshBtn.classList.add("loading");
-      refreshBtn.disabled = true;
 
       try {
         const mondayStr = formatDateString(state.mondayDate);
         const sundayStr = formatDateString(state.sundayDate);
-        
-        // Query events scheduled for this week (Monday to Sunday)
         const queryUrl = `${SUPABASE_URL}/rest/v1/usage_events?metadata->>date=gte.${mondayStr}&metadata->>date=lte.${sundayStr}&order=created_at.asc`;
         
         const response = await fetch(queryUrl, {
@@ -1237,27 +1140,20 @@
           }
         });
 
-        if (!response.ok) {
-          throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
-        }
+        if (!response.ok) throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
 
         const events = await response.json();
-        
         processEvents(events);
-        updateUI();
+        await fetchHistoryData();
         showSection("dashboard-view");
       } catch (err) {
         console.error("Dashboard Sync Error:", err);
-        document.getElementById("error-message").innerText = err.message || "Failed to reach Supabase server. Verify URL endpoint, anonymous access keys, or network connectivity.";
+        document.getElementById("error-message").innerText = err.message || "Failed to reach Supabase server.";
         showSection("error-view");
-      } finally {
-        refreshBtn.classList.remove("loading");
-        refreshBtn.disabled = false;
       }
     }
 
     async function fetchHistoryData() {
-      if (!checkConfigured()) return;
       try {
         const queryUrl = `${SUPABASE_URL}/rest/v1/weekly_stats_history?order=week_start_date.asc`;
         const response = await fetch(queryUrl, {
@@ -1269,404 +1165,131 @@
             "Content-Type": "application/json"
           }
         });
-        if (response.ok) {
-          state.historyData = await response.json();
-          populateHistorySelect();
-          renderHistoryCharts();
+        if (response.ok) state.historyData = await response.json();
+      } catch (err) { console.warn("Failed to fetch historical stats:", err); }
+      compileWeeksList();
+    }
+
+    function compileWeeksList() {
+      state.weeksList = [];
+      const liveStartStr = formatDateString(state.mondayDate);
+      const liveDailyBookings = {
+        Monday: state.dailyCreations[0], Tuesday: state.dailyCreations[1], Wednesday: state.dailyCreations[2], Thursday: state.dailyCreations[3], Friday: state.dailyCreations[4], Saturday: state.dailyCreations[5], Sunday: state.dailyCreations[6]
+      };
+
+      state.weeksList.push({
+        week_start_date: liveStartStr,
+        total_bookings: state.bookingsCount - state.cancellationsCount,
+        total_cancellations: state.cancellationsCount,
+        unique_players: state.uniqueMembersCount,
+        slots_with_sets_full: state.slotsWithSetsFull,
+        total_slots_run: 48,
+        bookings_by_day: liveDailyBookings,
+        isLive: true
+      });
+
+      state.historyData.forEach(h => {
+        if (h.week_start_date !== liveStartStr) {
+          state.weeksList.push({
+            week_start_date: h.week_start_date,
+            total_bookings: h.total_bookings,
+            total_cancellations: h.total_cancellations,
+            unique_players: h.unique_players,
+            slots_with_sets_full: h.slots_with_sets_full,
+            total_slots_run: h.total_slots_run || 48,
+            bookings_by_day: h.bookings_by_day,
+            isLive: false
+          });
         }
-      } catch (err) {
-        console.warn("Failed to fetch historical stats:", err);
-      }
+      });
+      state.weeksList.sort((a, b) => new Date(b.week_start_date) - new Date(a.week_start_date));
+      updateWoWOverview();
+      populateDeepDiveSelect();
     }
 
     // --- UI RENDERING & COMPONENT UPDATE ---
-    function updateUI() {
-      // Date Range Text
-      const formatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
-      const rangeText = `Week of ${state.mondayDate.toLocaleDateString('en-US', formatOptions)} - ${state.sundayDate.toLocaleDateString('en-US', formatOptions)}`;
-      document.getElementById("date-range-display").innerText = rangeText;
+    function updateWoWOverview() {
+      const tbody = document.getElementById("wow-table-body");
+      tbody.innerHTML = "";
+      state.weeksList.forEach(w => {
+        const tr = document.createElement("tr");
+        const parts = w.week_start_date.split('-');
+        const dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        let label = `Week of ${monthNames[dateObj.getMonth()]} ${dateObj.getDate()}, ${dateObj.getFullYear()}`;
+        if (w.isLive) label += ` <span class="badge-live">Live</span>`;
+        const setsPercent = Math.round((w.slots_with_sets_full / w.total_slots_run) * 100);
+        tr.innerHTML = `<td class="week-cell">${label}</td><td><strong>${w.total_bookings}</strong></td><td>${w.total_cancellations}</td><td>${w.slots_with_sets_full} / ${w.total_slots_run} (${setsPercent}%)</td>`;
+        tbody.appendChild(tr);
+      });
+    }
 
-      // KPIs
-      document.getElementById("kpi-bookings-count").innerText = state.bookingsCount;
-      document.getElementById("kpi-cancellations-count").innerText = state.cancellationsCount;
-      
-      const netDelta = state.bookingsCount - state.cancellationsCount;
-      const netElement = document.getElementById("kpi-net-count");
-      netElement.innerText = netDelta;
-      
-      // Update Net trend icons
-      const trendIcon = document.getElementById("net-trend-icon");
-      if (netDelta > 0) {
-        trendIcon.setAttribute("data-lucide", "trending-up");
-        trendIcon.parentElement.style.color = "var(--color-bamboo-light)";
-      } else if (netDelta < 0) {
-        trendIcon.setAttribute("data-lucide", "trending-down");
-        trendIcon.parentElement.style.color = "#c92a2a";
-      } else {
-        trendIcon.setAttribute("data-lucide", "minus");
-        trendIcon.parentElement.style.color = "var(--color-text-muted)";
-      }
+    function populateDeepDiveSelect() {
+      const select = document.getElementById("deep-dive-week-select");
+      select.innerHTML = "";
+      state.weeksList.forEach(w => {
+        const opt = document.createElement("option");
+        opt.value = w.week_start_date;
+        const parts = w.week_start_date.split('-');
+        const dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        opt.innerText = `Week of ${monthNames[dateObj.getMonth()]} ${dateObj.getDate()}${w.isLive ? " (Live)" : ""}`;
+        select.appendChild(opt);
+      });
+      if (state.weeksList.length > 0) { select.value = state.weeksList[0].week_start_date; updateDeepDiveView(); }
+    }
 
-      // Update new live KPIs
-      document.getElementById("kpi-unique-members-count").innerText = state.uniqueMembersCount;
-      
-      const setsCount = state.slotsWithSetsFull || 0;
-      const totalSlots = 12;
-      const saturationPercent = Math.round((setsCount / totalSlots) * 100);
-      document.getElementById("kpi-sets-count").innerText = `${setsCount} / ${totalSlots} (${saturationPercent}%)`;
-      
-      const progressFill = document.getElementById("kpi-sets-progress");
+    function updateDeepDiveView() {
+      const select = document.getElementById("deep-dive-week-select");
+      const data = state.weeksList.find(w => w.week_start_date === select.value);
+      if (!data) return;
+
+      document.getElementById("kpi-dive-bookings").innerText = data.total_bookings;
+      document.getElementById("kpi-dive-cancellations").innerText = data.total_cancellations;
+      document.getElementById("kpi-dive-members").innerText = data.unique_players;
+
+      const saturationPercent = Math.round((data.slots_with_sets_full / data.total_slots_run) * 100);
+      document.getElementById("kpi-dive-sets").innerText = `${data.slots_with_sets_full} / ${data.total_slots_run} (${saturationPercent}%)`;
+      const progressFill = document.getElementById("kpi-dive-sets-progress");
       progressFill.style.width = `${saturationPercent}%`;
-      if (saturationPercent >= 50) {
-        progressFill.classList.add("danger");
-      } else {
-        progressFill.classList.remove("danger");
-      }
+      progressFill.className = `progress-bar-fill ${saturationPercent >= 50 ? 'danger' : ''}`;
 
-      // Recent Activity Feed
-      const feedList = document.getElementById("activity-feed-list");
-      feedList.innerHTML = "";
-
-      if (state.recentEvents.length === 0) {
-        feedList.innerHTML = `
-          <div class="activity-empty-state">
-            <i data-lucide="info" style="width: 28px; height: 28px;"></i>
-            <p>No activity logs found for this week.<br>Select bookings or cancellations in the portal to log events.</p>
-          </div>
-        `;
-      } else {
-        state.recentEvents.forEach(evt => {
-          const item = document.createElement("div");
-          item.className = "activity-item";
-
-          const isBooking = evt.type === "booking";
-          const badgeClass = isBooking ? "badge-booking" : "badge-cancellation";
-          const badgeLabel = isBooking ? "Booked" : "Cancelled";
-          
-          const timeFormat = evt.time.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' @ ' + evt.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-          item.innerHTML = `
-            <div class="activity-meta">
-              <span class="activity-badge ${badgeClass}">${badgeLabel}</span>
-              <span class="activity-time">${timeFormat}</span>
-            </div>
-            <div class="activity-desc">${evt.description}</div>
-          `;
-          feedList.appendChild(item);
-        });
-      }
-
-      // Render chart
-      renderChart(state.dailyCreations);
-
-      // Last Updated time
-      const now = new Date();
-      document.getElementById("last-updated-text").innerText = `Last updated: ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
-      
+      renderDeepDiveChart(data.bookings_by_day);
+      const activityPanel = document.getElementById("dive-activity-panel");
+      if (data.isLive) { activityPanel.classList.remove("hidden"); renderLiveActivityFeed(); } else { activityPanel.classList.add("hidden"); }
       lucide.createIcons();
     }
 
-    function populateHistorySelect() {
-      const select = document.getElementById("history-week-select");
-      select.innerHTML = "";
-      if (state.historyData.length === 0) {
-        const opt = document.createElement("option");
-        opt.innerText = "No history data available";
-        select.appendChild(opt);
-        return;
-      }
-
-      // Add options from latest week to oldest
-      for (let i = state.historyData.length - 1; i >= 0; i--) {
-        const item = state.historyData[i];
-        const opt = document.createElement("option");
-        opt.value = item.week_start_date;
-        
-        const parts = item.week_start_date.split('-');
-        const dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-        const label = `Week of ${monthNames[dateObj.getMonth()]} ${dateObj.getDate()}, ${dateObj.getFullYear()}`;
-        
-        opt.innerText = label;
-        select.appendChild(opt);
-      }
-
-      select.value = state.historyData[state.historyData.length - 1].week_start_date;
-      updateHistoryKPIs();
-    }
-
-    function updateHistoryKPIs() {
-      const select = document.getElementById("history-week-select");
-      const selectedWeek = select.value;
-      const data = state.historyData.find(item => item.week_start_date === selectedWeek);
-      
-      if (!data) return;
-
-      document.getElementById("kpi-hist-bookings").innerText = data.total_bookings;
-      document.getElementById("kpi-hist-members").innerText = data.unique_players;
-      
-      const setsCount = data.slots_with_sets_full || 0;
-      const totalSlots = data.total_slots_run || 12;
-      const saturationPercent = Math.round((setsCount / totalSlots) * 100);
-      document.getElementById("kpi-hist-sets").innerText = `${setsCount} / ${totalSlots} (${saturationPercent}%)`;
-      
-      const progressFill = document.getElementById("kpi-hist-sets-progress");
-      progressFill.style.width = `${saturationPercent}%`;
-      if (saturationPercent >= 50) {
-        progressFill.classList.add("danger");
-      } else {
-        progressFill.classList.remove("danger");
-      }
-
-      renderHistoryDailyChart(data.bookings_by_day);
-      
-      const now = new Date();
-      document.getElementById("history-last-updated-text").innerText = `Last updated: ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-    }
-
     // --- CHART.JS AGGREGATION RENDERS ---
-    function renderChart(chartData) {
-      const ctx = document.getElementById('bookingChart').getContext('2d');
-      
-      if (bookingChart) {
-        bookingChart.destroy();
-      }
-
-      bookingChart = new Chart(ctx, {
+    function renderDeepDiveChart(dailyData) {
+      const ctx = document.getElementById('diveDailyChart').getContext('2d');
+      if (diveDailyChartObj) diveDailyChartObj.destroy();
+      diveDailyChartObj = new Chart(ctx, {
         type: 'bar',
         data: {
           labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-          datasets: [{
-            label: 'Bookings Created',
-            data: chartData,
-            backgroundColor: '#1b4332',
-            hoverBackgroundColor: '#d4af37',
-            borderRadius: 6,
-            borderSkipped: false,
-          }]
+          datasets: [{ data: [dailyData.Monday || 0, dailyData.Tuesday || 0, dailyData.Wednesday || 0, dailyData.Thursday || 0, dailyData.Friday || 0, dailyData.Saturday || 0, dailyData.Sunday || 0], backgroundColor: '#1b4332', borderRadius: 6 }]
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              backgroundColor: '#2c3531',
-              titleColor: '#f4f1de',
-              titleFont: { family: 'Outfit', weight: 'bold', size: 13 },
-              bodyColor: '#ffffff',
-              bodyFont: { family: 'Inter', size: 12 },
-              padding: 10,
-              cornerRadius: 8,
-              displayColors: false
-            }
-          },
-          scales: {
-            x: { grid: { display: false }, ticks: { color: '#2c3531', font: { family: 'Outfit', weight: 'bold' } } },
-            y: { grid: { color: 'rgba(27, 67, 50, 0.05)' }, ticks: { color: '#6b7770', font: { family: 'Inter' }, stepSize: 1, precision: 0 }, min: 0 }
-          }
-        }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
       });
     }
 
-    function renderHistoryDailyChart(dailyData) {
-      const ctx = document.getElementById('bookingHistoryChart').getContext('2d');
-      if (histDailyChartObj) {
-        histDailyChartObj.destroy();
-      }
-
-      const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      const dataValues = [
-        dailyData.Monday || dailyData.Mon || 0,
-        dailyData.Tuesday || dailyData.Tue || 0,
-        dailyData.Wednesday || dailyData.Wed || 0,
-        dailyData.Thursday || dailyData.Thu || 0,
-        dailyData.Friday || dailyData.Fri || 0,
-        dailyData.Saturday || dailyData.Sat || 0
-      ];
-
-      histDailyChartObj = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Active Bookings',
-            data: dataValues,
-            backgroundColor: '#1b4332',
-            hoverBackgroundColor: '#d4af37',
-            borderRadius: 6,
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false }
-          },
-          scales: {
-            x: { grid: { display: false }, ticks: { color: '#2c3531', font: { family: 'Outfit', weight: 'bold' } } },
-            y: { grid: { color: 'rgba(27, 67, 50, 0.05)' }, ticks: { stepSize: 1, precision: 0 }, min: 0 }
-          }
-        }
-      });
-    }
-
-    function renderHistoryCharts() {
-      // 1. WoW booking Trend Chart
-      const wowCtx = document.getElementById('wowTrendChart').getContext('2d');
-      if (wowTrendChartObj) {
-        wowTrendChartObj.destroy();
-      }
-
-      const labels = state.historyData.map(item => {
-        const parts = item.week_start_date.split('-');
-        const dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-        return `${monthNames[dateObj.getMonth()]} ${dateObj.getDate()}`;
-      });
-
-      const bookingTrendData = state.historyData.map(item => item.total_bookings);
-      const playerTrendData = state.historyData.map(item => item.unique_players);
-
-      // Append current week's live data to trends chart if available
-      if (state.mondayDate) {
-        const liveMondayStr = formatDateString(state.mondayDate);
-        const alreadyExists = state.historyData.some(item => item.week_start_date === liveMondayStr);
-        if (!alreadyExists) {
-          labels.push(`${monthNames[state.mondayDate.getMonth()]} ${state.mondayDate.getDate()} (Live)`);
-          const currentNetBookings = state.bookingsCount - state.cancellationsCount;
-          bookingTrendData.push(currentNetBookings >= 0 ? currentNetBookings : 0);
-          playerTrendData.push(state.uniqueMembersCount);
-        }
-      }
-
-      wowTrendChartObj = new Chart(wowCtx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Total Bookings',
-            data: bookingTrendData,
-            borderColor: '#1b4332',
-            backgroundColor: 'rgba(27, 67, 50, 0.04)',
-            borderWidth: 3,
-            fill: true,
-            tension: 0.3,
-            pointBackgroundColor: '#d4af37',
-            pointRadius: 4,
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false }
-          },
-          scales: {
-            x: { grid: { color: 'rgba(0,0,0,0.02)' }, ticks: { font: { family: 'Outfit', weight: 'bold' } } },
-            y: { grid: { color: 'rgba(27, 67, 50, 0.05)' }, min: 0 }
-          }
-        }
-      });
-
-      // 2. WoW Unique Players Chart
-      const playersCtx = document.getElementById('wowPlayersChart').getContext('2d');
-      if (wowPlayersChartObj) {
-        wowPlayersChartObj.destroy();
-      }
-
-      wowPlayersChartObj = new Chart(playersCtx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Unique Members',
-            data: playerTrendData,
-            borderColor: '#b3863b',
-            backgroundColor: 'rgba(179, 134, 59, 0.04)',
-            borderWidth: 3,
-            fill: true,
-            tension: 0.3,
-            pointBackgroundColor: '#1b4332',
-            pointRadius: 4,
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false }
-          },
-          scales: {
-            x: { grid: { color: 'rgba(0,0,0,0.02)' }, ticks: { font: { family: 'Outfit', weight: 'bold' } } },
-            y: { grid: { color: 'rgba(27, 67, 50, 0.05)' }, min: 0 }
-          }
-        }
-      });
-    }
-
-    // --- TAB TABS SWITCH HANDLER ---
-    function initTabs() {
-      const tabs = document.querySelectorAll(".tab-btn");
-      tabs.forEach(tab => {
-        tab.addEventListener("click", (e) => {
-          const btn = e.target.closest(".tab-btn");
-          if (!btn) return;
-          
-          tabs.forEach(t => t.classList.remove("active"));
-          btn.classList.add("active");
-          
-          const tabName = btn.getAttribute("data-tab");
-          if (tabName === "weekly-stats") {
-            document.getElementById("weekly-stats-tab-content").classList.remove("hidden");
-            document.getElementById("weekly-trends-tab-content").classList.add("hidden");
-          } else {
-            document.getElementById("weekly-stats-tab-content").classList.add("hidden");
-            document.getElementById("weekly-trends-tab-content").classList.remove("hidden");
-            
-            // Resize and update charts to fix rendering inside unhidden containers
-            setTimeout(() => {
-              if (wowTrendChartObj) {
-                wowTrendChartObj.resize();
-                wowTrendChartObj.update();
-              }
-              if (wowPlayersChartObj) {
-                wowPlayersChartObj.resize();
-                wowPlayersChartObj.update();
-              }
-              if (histDailyChartObj) {
-                histDailyChartObj.resize();
-                histDailyChartObj.update();
-              }
-            }, 50);
-          }
-        });
+    function renderLiveActivityFeed() {
+      const feedList = document.getElementById("dive-activity-feed-list");
+      feedList.innerHTML = "";
+      state.recentEvents.forEach(evt => {
+        const item = document.createElement("div");
+        item.className = "activity-item";
+        item.innerHTML = `<div class="activity-meta"><span class="activity-badge ${evt.type === 'booking' ? 'badge-booking' : 'badge-cancellation'}">${evt.type === 'booking' ? 'Booked' : 'Cancelled'}</span><span class="activity-time">${evt.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div><div class="activity-desc">${evt.description}</div>`;
+        feedList.appendChild(item);
       });
     }
 
     // --- INITIALIZE PAGE ---
     document.addEventListener("DOMContentLoaded", async () => {
       computeCurrentWeekMonday();
-      
-      // Wire up event listeners
-      document.getElementById("btn-refresh").addEventListener("click", fetchUsageEvents);
       document.getElementById("btn-retry").addEventListener("click", fetchUsageEvents);
-      document.getElementById("history-week-select").addEventListener("change", updateHistoryKPIs);
-
-      // Wire up tab buttons
-      initTabs();
-
-      // Load config dynamically from serverless config API
+      document.getElementById("deep-dive-week-select").addEventListener("change", updateDeepDiveView);
       await loadSupabaseConfig();
-
-      // Start initial load
-      if (!checkConfigured()) {
-        showSection("setup-view");
-        lucide.createIcons();
-      } else {
-        // Show tab bar
-        document.getElementById("tabs-navigation").classList.remove("hidden");
-        fetchUsageEvents();
-        fetchHistoryData();
-      }
+      if (!checkConfigured()) { showSection("setup-view"); lucide.createIcons(); } else { fetchUsageEvents(); }
     });
   </script>
 </body>

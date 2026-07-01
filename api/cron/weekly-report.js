@@ -133,40 +133,33 @@ module.exports = async (req, res) => {
       }
     });
 
-    // Compute Set Saturation (how many slots had all 4 club sets fully in use)
-    // 12 slots total: 6 days * 2 slots (Morning, Afternoon)
-    let slotsWithSetsFull = 0;
+    // Compute Set Saturation (Corrected: sum of sets used in each session, up to 4 sets per session, total max 48)
+    let totalSetsUsed = 0;
     const slots = ["Morning", "Afternoon"];
 
     dayNames.forEach(day => {
       slots.forEach(slot => {
-        // Find bookings on this day and slot
         const slotBookings = bookingsList.filter(b => b.day === day && b.slot === slot);
-        
-        // Count how many unique tables requested a set
         const tablesRequestingSet = new Set();
         slotBookings.forEach(b => {
           if (b.needSet) {
             tablesRequestingSet.add(b.table);
           }
         });
-
-        // If 4 or more tables request a set, all 4 club sets are fully in use
-        if (tablesRequestingSet.size >= 4) {
-          slotsWithSetsFull++;
-        }
+        const setsUsedInSlot = Math.min(4, tablesRequestingSet.size);
+        totalSetsUsed += setsUsedInSlot;
       });
     });
 
-    // 3. Write summary stats back to Supabase (Upsert)
-    const historyUrl = `${supabaseUrl}/rest/v1/weekly_stats_history`;
+    // 3. Write summary stats back to Supabase (Upsert on conflict of week_start_date)
+    const historyUrl = `${supabaseUrl}/rest/v1/weekly_stats_history?on_conflict=week_start_date`;
     const reportData = {
       week_start_date: prevMondayStr,
       total_bookings: totalBookings,
       total_cancellations: totalCancellations,
       unique_players: uniquePlayers,
-      slots_with_sets_full: slotsWithSetsFull,
-      total_slots_run: 12,
+      slots_with_sets_full: totalSetsUsed,
+      total_slots_run: 48,
       bookings_by_day: dailyBookings
     };
 
@@ -176,7 +169,7 @@ module.exports = async (req, res) => {
         "apikey": supabaseKey,
         "Authorization": `Bearer ${supabaseKey}`,
         "Content-Type": "application/json",
-        "Prefer": "resolution=merge-duplicates"
+        "Prefer": "resolution=merge-duplicates,return=minimal"
       },
       body: JSON.stringify(reportData)
     });
