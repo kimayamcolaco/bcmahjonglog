@@ -283,11 +283,16 @@
       animation: spin 1s infinite linear;
     }
 
-    /* KPI Grid */
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.5rem;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.25rem;
+    }
+    @media (min-width: 992px) {
+      .kpi-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+      }
     }
 
     .kpi-card {
