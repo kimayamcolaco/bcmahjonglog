@@ -2,7 +2,7 @@
 
 // --- Constants & Config ---
 let SUPABASE_URL = "YOUR_SUPABASE_URL";
-let SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+let SUPABASE_PUBLISHABLE_KEY = "YOUR_SUPABASE_PUBLISHABLE_KEY";
 
 function sanitizeSupabaseUrl(url) {
   if (!url) return "";
@@ -24,9 +24,9 @@ async function loadSupabaseConfig() {
     const response = await fetch("/api/config");
     if (response.ok) {
       const config = await response.json();
-      if (config.supabaseUrl && config.supabaseAnonKey) {
+      if (config.supabaseUrl && config.supabasePublishableKey) {
         SUPABASE_URL = sanitizeSupabaseUrl(config.supabaseUrl);
-        SUPABASE_ANON_KEY = config.supabaseAnonKey.trim();
+        SUPABASE_PUBLISHABLE_KEY = config.supabasePublishableKey.trim();
       }
     }
   } catch (err) {
@@ -43,10 +43,7 @@ const AFTERNOON_TIMES = [
   "2:00 PM", "2:30 PM", "3:00 PM", "3:30 PM", "4:00 PM", "4:30 PM", "5:00 PM", "5:30 PM", "6:00 PM"
 ];
 
-// Unique database key on kvdb.io (shared free KV store) or Vercel Serverless Proxy
-const DB_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-  ? "https://kvdb.io/SvmeRCjC2rgQ5SvPj5n7y7/bookings"
-  : "/api/bookings";
+const DB_URL = "/api/bookings";
 
 
 // --- State ---
@@ -126,35 +123,14 @@ function getCurrentWeekDates() {
 
 // --- Load / Save Data via Cloud Database ---
 
-async function fetchDatabaseBookings() {
-  try {
-    const response = await fetch(`${DB_URL}?_=${Date.now()}`, {
-      headers: {
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      }
-    });
-    if (response.status === 404) {
-      // Database is empty, initialize with seed data
-      return await initializeSeedData();
-    }
-    if (!response.ok) throw new Error("Failed to fetch cloud database.");
-    
-    const data = await response.json();
-    return Array.isArray(data) ? migrateData(data) : [];
-  } catch (error) {
-    console.warn("Database error, falling back to localStorage:", error);
-    try {
-      const saved = localStorage.getItem("mahjong_bookings");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return Array.isArray(parsed) ? migrateData(parsed) : [];
-      }
-    } catch (storageError) {
-      console.error("Local storage read failed:", storageError);
-    }
-    return [];
-  }
+async function fetchDatabaseBookings(includeHistory = false) {
+  const query = new URLSearchParams({ _: String(Date.now()) });
+  if (!includeHistory) query.set("since", getCurrentWeekDates().Monday.dateString);
+  const response = await fetch(`${DB_URL}?${query}`, { cache: "no-store" });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "Failed to fetch booking storage.");
+  if (!Array.isArray(data)) throw new Error("Booking storage returned invalid data.");
+  return migrateData(data);
 }
 
 function migrateData(bookingsList) {
@@ -175,7 +151,7 @@ function migrateData(bookingsList) {
         b.date = weekDates[b.day]?.dateString || weekDates["Monday"].dateString;
       }
       if (!b.groupId) {
-        b.groupId = `g-${Date.now()}-${Math.floor(Math.random()*1000)}`;
+        b.groupId = `g-legacy-${b.id}`;
       }
       if (!b.gameType) {
         b.gameType = "Taiwanese";
@@ -194,7 +170,15 @@ async function sha256(message) {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function saveDatabaseBookings(bookingsList, cancelPin = null) {
+function cacheBookings(bookingsList) {
+  try {
+    localStorage.setItem("mahjong_bookings", JSON.stringify(bookingsList));
+  } catch (error) {
+    console.warn("Bookings are saved, but the local cache could not be updated:", error);
+  }
+}
+
+async function saveDatabaseBookings(bookingsList, cancelPin = null, previousBookings = state.bookings) {
   try {
     const headers = {
       "Content-Type": "application/json"
@@ -202,32 +186,38 @@ async function saveDatabaseBookings(bookingsList, cancelPin = null) {
     if (cancelPin) {
       headers["X-Cancel-Pin"] = cancelPin;
     }
+    const previous = new Map(previousBookings.map(b => [b.id, b]));
+    const next = new Map(bookingsList.map(b => [b.id, b]));
+    const changed = (a, b) => JSON.stringify(a) !== JSON.stringify(b);
+    const before = previousBookings.filter(b => !next.has(b.id) || changed(b, next.get(b.id)));
+    const after = bookingsList.filter(b => !previous.has(b.id) || changed(b, previous.get(b.id)));
     const response = await fetch(DB_URL, {
       method: "POST",
       headers: headers,
-      body: JSON.stringify(bookingsList)
+      body: JSON.stringify({ before, after })
     });
-    if (!response.ok) throw new Error("Failed to write to cloud database.");
-    localStorage.setItem("mahjong_bookings", JSON.stringify(bookingsList));
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Failed to save bookings.");
+    if (result.success !== true) throw new Error("Booking storage returned an invalid save confirmation.");
+    cacheBookings(bookingsList);
     return true;
   } catch (error) {
     console.error("Database save failed:", error);
-    localStorage.setItem("mahjong_bookings", JSON.stringify(bookingsList));
+    showToast(error.message, "error");
     return false;
   }
 }
 
 async function logUsageEvents(events) {
-  if (SUPABASE_URL.includes("YOUR_SUPABASE") || SUPABASE_ANON_KEY.includes("YOUR_SUPABASE")) {
-    console.warn("Supabase URL or Anon Key is still a placeholder. Skipping usage logging.");
+  if (SUPABASE_URL.includes("YOUR_SUPABASE") || !SUPABASE_PUBLISHABLE_KEY.startsWith("sb_publishable_")) {
+    console.warn("Supabase URL or Publishable key is not configured. Skipping usage logging.");
     return;
   }
   try {
     const response = await fetch(`${SUPABASE_URL}/rest/v1/usage_events`, {
       method: "POST",
       headers: {
-        "apikey": SUPABASE_ANON_KEY,
-        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+        "apikey": SUPABASE_PUBLISHABLE_KEY,
         "Content-Type": "application/json",
         "Prefer": "return=minimal"
       },
@@ -241,27 +231,15 @@ async function logUsageEvents(events) {
   }
 }
 
-async function initializeSeedData() {
-  const weekDates = getCurrentWeekDates();
-  const seed = [
-    { id: "seed-1", date: weekDates["Monday"].dateString, day: "Monday", slot: "Morning", table: 1, seat: 1, name: "Alice Chen", timeStart: "10:00 AM", needSet: true, groupId: "g-seed-1" },
-    { id: "seed-2", date: weekDates["Monday"].dateString, day: "Monday", slot: "Morning", table: 1, seat: 2, name: "Alice Chen (+1)", timeStart: "10:00 AM", needSet: true, groupId: "g-seed-1" },
-    { id: "seed-3", date: weekDates["Monday"].dateString, day: "Monday", slot: "Morning", table: 3, seat: 1, name: "Sarah Connor", timeStart: "11:00 AM", needSet: false, groupId: "g-seed-2" },
-    { id: "seed-4", date: weekDates["Monday"].dateString, day: "Monday", slot: "Afternoon", table: 5, seat: 1, name: "John Doe", timeStart: "2:30 PM", needSet: true, groupId: "g-seed-3" },
-    { id: "seed-5", date: weekDates["Wednesday"].dateString, day: "Wednesday", slot: "Afternoon", table: 2, seat: 1, name: "David Kim", timeStart: "3:00 PM", needSet: false, groupId: "g-seed-4" }
-  ];
-  await saveDatabaseBookings(seed);
-  return seed;
-}
-
 // Full page loader for initial sync
 async function performInitialSync() {
   showLoading(true);
   try {
     state.bookings = await fetchDatabaseBookings();
+    cacheBookings(state.bookings);
   } catch (err) {
     console.error("Initial sync error:", err);
-    state.bookings = [];
+    showToast("Could not sync bookings. Cached seats may be out of date; storage must reconnect before booking.", "error");
   } finally {
     showLoading(false);
     updateView();
@@ -270,10 +248,16 @@ async function performInitialSync() {
 
 // Background sync (silent, no overlay)
 async function performBackgroundSync() {
-  const latestBookings = await fetchDatabaseBookings();
-  if (JSON.stringify(latestBookings) !== JSON.stringify(state.bookings)) {
-    state.bookings = latestBookings;
-    updateView();
+  try {
+    const latestBookings = await fetchDatabaseBookings();
+    if (JSON.stringify(latestBookings) !== JSON.stringify(state.bookings)) {
+      state.bookings = latestBookings;
+      cacheBookings(latestBookings);
+      updateView();
+    }
+  } catch (error) {
+    console.error("Background booking sync failed:", error);
+    showToast("Bookings could not refresh. Check your connection before booking.", "error");
   }
 }
 
@@ -787,15 +771,16 @@ async function handleNewBooking() {
   }
 
   showLoading(true);
-  const pinHash = await sha256(pin);
-
   // Fetch the latest fresh state from the cloud database to check concurrency
   let freshBookings;
+  let pinHash;
   try {
+    pinHash = await sha256(pin);
     freshBookings = await fetchDatabaseBookings();
   } catch (err) {
     showLoading(false);
-    showToast("Database synchronization failed. Please try again.", "error");
+    console.error("Booking preparation failed:", err);
+    showToast(err.message, "error");
     return;
   }
 
@@ -926,12 +911,11 @@ async function handleNewBooking() {
 
   // Concat and write back to database
   const updatedBookings = freshBookings.concat(newGroupBookings);
-  const success = await saveDatabaseBookings(updatedBookings);
+  const success = await saveDatabaseBookings(updatedBookings, null, freshBookings);
 
   showLoading(false);
-  closeBookingModal();
-
   if (success) {
+    closeBookingModal();
     state.bookings = updatedBookings;
     updateView();
     const events = newGroupBookings.map(b => ({
@@ -956,8 +940,6 @@ async function handleNewBooking() {
     } else {
       showToast(`Successfully booked Table ${table} seat slot for ${name}!`);
     }
-  } else {
-    showToast("Failed to save booking. Please check your connection.", "error");
   }
 }
 
@@ -1005,17 +987,17 @@ async function handleCancelBooking() {
       freshBookings = await fetchDatabaseBookings();
     } catch (err) {
       showLoading(false);
-      showToast("Sync failed. Check connection.", "error");
+      console.error("Cancellation sync failed:", err);
+      showToast(err.message, "error");
       return;
     }
 
     const updatedBookings = freshBookings.filter(b => b.groupId !== groupId);
-    const success = await saveDatabaseBookings(updatedBookings, cancelPin);
+    const success = await saveDatabaseBookings(updatedBookings, cancelPin, freshBookings);
 
     showLoading(false);
-    closeDetailsModal();
-
     if (success) {
+      closeDetailsModal();
       state.bookings = updatedBookings;
       updateView();
       const events = groupBookings.map(b => ({
@@ -1040,8 +1022,6 @@ async function handleCancelBooking() {
       } else {
         showToast(`Cancelled booking for ${originalName}.`);
       }
-    } else {
-      showToast("Failed to sync cancellation.", "error");
     }
   } else {
     const errorText = document.getElementById("cancel-error");
@@ -1051,11 +1031,18 @@ async function handleCancelBooking() {
 }
 
 // --- Backup Modal Operations ---
-function openExportModal() {
-  const modal = document.getElementById("export-modal");
-  const textarea = document.getElementById("export-text");
-  textarea.value = JSON.stringify(state.bookings, null, 2);
-  modal.classList.remove("hidden");
+async function openExportModal() {
+  showLoading(true);
+  try {
+    const bookings = await fetchDatabaseBookings(true);
+    document.getElementById("export-text").value = JSON.stringify(bookings, null, 2);
+    document.getElementById("export-modal").classList.remove("hidden");
+  } catch (error) {
+    console.error("Booking export failed:", error);
+    showToast(error.message, "error");
+  } finally {
+    showLoading(false);
+  }
 }
 
 function copyExportData() {
@@ -1095,24 +1082,19 @@ async function handleImportData() {
       throw new Error("Data must be an array of bookings");
     }
     
-    parsed.forEach(b => {
-      if (b.seat === "N" || b.seat === "1") b.seat = 1;
-      else if (b.seat === "E" || b.seat === "2") b.seat = 2;
-      else if (b.seat === "S" || b.seat === "3") b.seat = 3;
-      else if (b.seat === "W" || b.seat === "4") b.seat = 4;
-      else b.seat = parseInt(b.seat);
-      
-      if (!b.groupId) {
-        b.groupId = `g-${Date.now()}-${Math.floor(Math.random()*1000)}`;
-      }
-    });
-
     showLoading(true);
-    const success = await saveDatabaseBookings(parsed);
+    const freshBookings = await fetchDatabaseBookings(true);
+    // Import adds missing rows without deleting history or overwriting existing credentials.
+    const merged = new Map(freshBookings.map(b => [b.id, b]));
+    for (const booking of migrateData(parsed)) {
+      if (!merged.has(booking.id)) merged.set(booking.id, booking);
+    }
+    const updatedBookings = [...merged.values()];
+    const success = await saveDatabaseBookings(updatedBookings, null, freshBookings);
     showLoading(false);
 
     if (success) {
-      state.bookings = parsed;
+      state.bookings = updatedBookings;
       document.getElementById("import-modal").classList.add("hidden");
       updateView();
       showToast("Successfully imported scheduling data!");
@@ -1122,6 +1104,8 @@ async function handleImportData() {
   } catch (err) {
     errorText.innerText = `Import failed: ${err.message}`;
     errorText.classList.remove("hidden");
+  } finally {
+    showLoading(false);
   }
 }
 

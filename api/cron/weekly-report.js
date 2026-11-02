@@ -27,10 +27,11 @@ module.exports = async (req, res) => {
   }
 
   const supabaseUrl = sanitizeSupabaseUrl(process.env.SUPABASE_URL);
-  const supabaseKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || "").trim();
+  const supabaseKey = (process.env.SUPABASE_SECRET_KEY || "").trim();
 
-  if (!supabaseUrl || !supabaseKey) {
-    return res.status(500).json({ error: "Supabase environment variables are missing." });
+  if (!supabaseUrl || !supabaseKey.startsWith("sb_secret_")) {
+    console.error("Weekly reporting requires SUPABASE_URL and SUPABASE_SECRET_KEY.");
+    return res.status(500).json({ error: "Supabase URL or Secret key is missing or invalid." });
   }
 
   try {
@@ -74,7 +75,6 @@ module.exports = async (req, res) => {
       method: "GET",
       headers: {
         "apikey": supabaseKey,
-        "Authorization": `Bearer ${supabaseKey}`,
         "x-is-dashboard": "true",
         "Content-Type": "application/json"
       }
@@ -167,7 +167,6 @@ module.exports = async (req, res) => {
       method: "POST",
       headers: {
         "apikey": supabaseKey,
-        "Authorization": `Bearer ${supabaseKey}`,
         "Content-Type": "application/json",
         "Prefer": "resolution=merge-duplicates,return=minimal"
       },
