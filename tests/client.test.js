@@ -93,39 +93,55 @@ test("confirm booking failure retains the form and releases the loading overlay"
   assert.equal(messages.at(-1).message, "Save failed");
 });
 
-test("confirm booking saves a complete three-seat group and updates the UI only on success", async () => {
-  let payload;
-  const { context, cache, messages } = client(async (url, options) => {
-    if (options?.method !== "POST") return Response.json([]);
-    payload = JSON.parse(options.body);
-    return Response.json({ success: true });
-  });
-  const values = {
-    "modal-table-id": "1", "modal-seat-id": "2", "player-name": "Test Player",
-    "player-guests": "2", "player-time-start": "10:00 AM",
-    "player-game-type": "Taiwanese", "player-pin": "A123"
-  };
-  context.document.getElementById = id => ({ value: values[id], checked: false });
-  let closed = false;
-  let updated = false;
-  let events;
-  const loading = [];
-  context.showLoading = value => loading.push(value);
-  context.closeBookingModal = () => { closed = true; };
-  context.updateView = () => { updated = true; };
-  context.logUsageEvents = value => { events = value; };
-  await context.handleNewBooking();
-  assert.equal(closed, true);
-  assert.equal(updated, true);
-  assert.equal(loading.at(-1), false);
-  assert.deepEqual(payload.before, []);
-  assert.equal(payload.after.length, 3);
-  assert.equal(new Set(payload.after.map(b => b.seat)).size, 3);
-  assert.equal(new Set(payload.after.map(b => b.groupId)).size, 1);
-  assert.equal(payload.after[0].pinHash, crypto.createHash("sha256").update("A123").digest("hex"));
-  assert.equal(JSON.parse(cache.mahjong_bookings).length, 3);
-  assert.equal(events.length, 3);
-  assert.match(messages.at(-1).message, /Booked 3 seats/);
+test("confirm booking saves a complete three-seat group and updates the UI only on success", async t => {
+  for (const gameType of ["Taiwanese", "Riichi"]) {
+    await t.test(gameType, async () => {
+      let payload;
+      const { context, cache, messages } = client(async (url, options) => {
+        if (options?.method !== "POST") return Response.json([]);
+        payload = JSON.parse(options.body);
+        return Response.json({ success: true });
+      });
+      const values = {
+        "modal-table-id": "1", "modal-seat-id": "2", "player-name": "Test Player",
+        "player-guests": "2", "player-time-start": "10:00 AM",
+        "player-game-type": gameType, "player-pin": "A123"
+      };
+      context.document.getElementById = id => ({ value: values[id], checked: false });
+      let closed = false;
+      let updated = false;
+      let events;
+      const loading = [];
+      context.showLoading = value => loading.push(value);
+      context.closeBookingModal = () => { closed = true; };
+      context.updateView = () => { updated = true; };
+      context.logUsageEvents = value => { events = value; };
+      await context.handleNewBooking();
+      assert.equal(closed, true);
+      assert.equal(updated, true);
+      assert.equal(loading.at(-1), false);
+      assert.deepEqual(payload.before, []);
+      assert.equal(payload.after.length, 3);
+      assert.equal(new Set(payload.after.map(b => b.seat)).size, 3);
+      assert.equal(new Set(payload.after.map(b => b.groupId)).size, 1);
+      assert.ok(payload.after.every(b => b.gameType === gameType));
+      assert.equal(payload.after[0].pinHash, crypto.createHash("sha256").update("A123").digest("hex"));
+      const cached = JSON.parse(cache.mahjong_bookings);
+      assert.equal(cached.length, 3);
+      assert.ok(cached.every(b => b.gameType === gameType));
+      assert.equal(events.length, 3);
+      assert.ok(events.every(event => event.metadata.gameType === gameType));
+      assert.match(messages.at(-1).message, /Booked 3 seats/);
+    });
+  }
+});
+
+test("Mahjong selector includes Riichi without removing existing types or changing the default", () => {
+  const html = fs.readFileSync(require.resolve("../index.html"), "utf8");
+  const select = html.match(/<select id="player-game-type" required>([\s\S]*?)<\/select>/)[1];
+  const options = Array.from(select.matchAll(/<option value="([^"]+)">([^<]+)<\/option>/g), match => [match[1], match[2]]);
+  const types = ["Taiwanese", "ATF", "Singapore", "Western", "Classic", "American", "Riichi"];
+  assert.deepEqual(options, types.map(type => [type, type]));
 });
 
 test("unconfirmed 200 responses cannot cache a reservation", async () => {
